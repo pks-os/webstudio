@@ -10,7 +10,7 @@ import {
   createBuild,
   cloneBuild,
 } from "@webstudio-is/project-build/index.server";
-import { Project, Title } from "../shared/schema";
+import { ClonableSettings, Project, Title } from "../shared/schema";
 import { generateDomain, validateProjectDomain } from "./project-domain";
 
 export const loadById = async (
@@ -144,22 +144,40 @@ export const updatePreviewImage = async (
   });
 };
 
-const clone = async (
+export const clone = async (
   {
-    project,
+    projectId,
     title,
-    env = "dev",
   }: {
-    project: Project;
-    title?: string;
-    env?: "dev" | "prod";
+    projectId: string;
+    title?: string | undefined;
   },
   context: AppContext
 ) => {
-  const userId = context.authorization.userId;
+  const project = await loadById(projectId, context);
+  if (project === null) {
+    throw new Error(`Not found project "${projectId}"`);
+  }
+
+  const { userId } = context.authorization;
 
   if (userId === undefined) {
     throw new Error("The user must be authenticated to clone the project");
+  }
+
+  // A clonable project can be cloned with view permissions, but otherwise
+  // one needs at least admin permission.
+  if (project.isClonable !== true) {
+    const canAdmin = await authorizeProject.hasProjectPermit(
+      { projectId, permit: "admin" },
+      context
+    );
+
+    if (canAdmin === false) {
+      throw new AuthorizationError(
+        "Admin permission is required to clone the project, or alternatively, make it clonable."
+      );
+    }
   }
 
   const newProjectId = uuid();
@@ -173,7 +191,7 @@ const clone = async (
       data: {
         id: newProjectId,
         userId: userId,
-        title: title ?? project.title,
+        title: title ?? `${project.title} (copy)`,
         domain: generateDomain(project.title),
         previewImageAssetId: project.previewImageAsset?.id,
       },
@@ -210,29 +228,6 @@ const clone = async (
   return Project.parse(clonedProject);
 };
 
-export const duplicate = async (
-  {
-    projectId,
-    title,
-  }: {
-    projectId: string;
-    title?: string | undefined;
-  },
-  context: AppContext
-) => {
-  const project = await loadById(projectId, context);
-  if (project === null) {
-    throw new Error(`Not found project "${projectId}"`);
-  }
-  return await clone(
-    {
-      project,
-      title: title ?? `${project.title} (copy)`,
-    },
-    context
-  );
-};
-
 export const updateDomain = async (
   input: {
     id: string;
@@ -265,4 +260,18 @@ export const updateDomain = async (
     }
     throw error;
   }
+};
+
+export const updateClonableSettings = async (
+  { projectId, ...settings }: ClonableSettings & { projectId: string },
+  context: AppContext
+) => {
+  ClonableSettings.parse(settings);
+
+  await assertEditPermission(projectId, context);
+
+  return await prisma.project.update({
+    where: { id: projectId },
+    data: settings,
+  });
 };
