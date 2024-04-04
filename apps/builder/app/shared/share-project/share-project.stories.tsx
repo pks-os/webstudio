@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import type { ComponentStory } from "@storybook/react";
+import type { StoryFn } from "@storybook/react";
 import {
   Button,
   FloatingPanelPopover,
@@ -82,7 +82,7 @@ const useShareProject = (
   return { links, onChange, onDelete, onCreate };
 };
 
-export const Empty: ComponentStory<typeof ShareProject> = () => {
+export const Empty: StoryFn<typeof ShareProject> = () => {
   const props = useShareProject();
   return (
     <FloatingPanelPopover modal open>
@@ -104,7 +104,7 @@ export const Empty: ComponentStory<typeof ShareProject> = () => {
   );
 };
 
-export const WithLinks: ComponentStory<typeof ShareProject> = () => {
+export const WithLinks: StoryFn<typeof ShareProject> = () => {
   const props = useShareProject(initialLinks);
   return (
     <FloatingPanelPopover modal open>
@@ -126,7 +126,7 @@ export const WithLinks: ComponentStory<typeof ShareProject> = () => {
   );
 };
 
-export const WithAsyncLinks: ComponentStory<typeof ShareProject> = () => {
+export const WithAsyncLinks: StoryFn<typeof ShareProject> = () => {
   const props = useShareProject(initialLinks, true);
   return (
     <FloatingPanelPopover modal open>
