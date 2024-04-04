@@ -7,10 +7,14 @@ settings:
 overrides:
   '@babel/types': 7.24.0
   esbuild: ^0.20.2
+<<<<<<< HEAD
   '@types/react': ^18.2.70
   '@types/react-dom': ^18.2.25
   react: 18.3.0-canary-14898b6a9-20240318
   react-dom: 18.3.0-canary-14898b6a9-20240318
+=======
+  source-map-js: 1.2.0
+>>>>>>> ad8ab7460 (Override source map js)
 
 patchedDependencies:
   '@stitches/react@1.3.1-1':
@@ -16585,10 +16589,14 @@ snapshots:
     resolution: {integrity: sha512-cquyDNvZ6jTbf/+x+AgM2Arrp6G4Dzbb0R64jiG804HRMfRiFXWI6kqUVqZ6ZR0bQhIoQjB4+2bhNtVwndW15g==}
 >>>>>>> 554ccd34c (build: upgrade storybook 8)
     dependencies:
-      '@babel/parser': 7.24.1
+      '@babel/parser': 7.24.4
       '@vue/shared': 3.3.4
       estree-walker: 2.0.2
       source-map-js: 1.2.0
+<<<<<<< HEAD
+=======
+    dev: false
+>>>>>>> ad8ab7460 (Override source map js)
 
   '@vue/compiler-dom@3.3.4':
     dependencies:
@@ -16597,7 +16605,7 @@ snapshots:
 
   '@vue/compiler-sfc@3.3.4':
     dependencies:
-      '@babel/parser': 7.24.1
+      '@babel/parser': 7.24.4
       '@vue/compiler-core': 3.3.4
       '@vue/compiler-dom': 3.3.4
       '@vue/compiler-ssr': 3.3.4
@@ -16607,6 +16615,10 @@ snapshots:
       magic-string: 0.30.1
       postcss: 8.4.38
       source-map-js: 1.2.0
+<<<<<<< HEAD
+=======
+    dev: false
+>>>>>>> ad8ab7460 (Override source map js)
 
   '@vue/compiler-ssr@3.3.4':
     dependencies:
@@ -16615,7 +16627,7 @@ snapshots:
 
   '@vue/reactivity-transform@3.3.4':
     dependencies:
-      '@babel/parser': 7.24.1
+      '@babel/parser': 7.24.4
       '@vue/compiler-core': 3.3.4
       '@vue/shared': 3.3.4
       estree-walker: 2.0.2
@@ -17528,12 +17540,22 @@ snapshots:
   css-tree@2.2.1:
     dependencies:
       mdn-data: 2.0.28
+<<<<<<< HEAD
       source-map-js: 1.0.2
+=======
+      source-map-js: 1.2.0
+    dev: true
+>>>>>>> ad8ab7460 (Override source map js)
 
   css-tree@2.3.1(patch_hash=epgcmebti7rfrc2ej4odb3t4jy):
     dependencies:
       mdn-data: 2.0.30
+<<<<<<< HEAD
       source-map-js: 1.0.2
+=======
+      source-map-js: 1.2.0
+    patched: true
+>>>>>>> ad8ab7460 (Override source map js)
 
   css-what@5.1.0: {}
 
@@ -21097,7 +21119,7 @@ snapshots:
     dependencies:
       nanoid: 3.3.6
       picocolors: 1.0.0
-      source-map-js: 1.0.2
+      source-map-js: 1.2.0
 
 <<<<<<< HEAD
   postcss@8.4.38:
@@ -22103,11 +22125,14 @@ snapshots:
       solid-js: 1.7.11
       swr-store: 0.10.6
 
+<<<<<<< HEAD
   source-map-js@1.0.2: {}
 
 <<<<<<< HEAD
   source-map-js@1.2.0: {}
 =======
+=======
+>>>>>>> ad8ab7460 (Override source map js)
   /source-map-js@1.2.0:
     resolution: {integrity: sha512-itJW8lvSA0TXEphiRoawsCksnlf8SyvmFzIhltqAHluXd88pkCd+cXJVHTDwdCr0IzwptSm035IHQktUu1QUMg==}
     engines: {node: '>=0.10.0'}
