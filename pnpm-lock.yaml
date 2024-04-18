@@ -1042,6 +1042,9 @@ importers:
       typescript:
         specifier: 5.4.5
         version: 5.4.5
+      vite:
+        specifier: ^5.2.8
+        version: 5.2.8(@types/node@18.17.1)
       vite-tsconfig-paths:
         specifier: ^4.3.2
         version: 4.3.2(typescript@5.4.5)(vite@5.2.8(@types/node@18.17.1))
@@ -13857,7 +13860,7 @@ snapshots:
 
   '@vue/compiler-core@3.3.4':
     dependencies:
-      '@babel/parser': 7.24.1
+      '@babel/parser': 7.24.4
       '@vue/shared': 3.3.4
       estree-walker: 2.0.2
       source-map-js: 1.2.0
@@ -13869,7 +13872,7 @@ snapshots:
 
   '@vue/compiler-sfc@3.3.4':
     dependencies:
-      '@babel/parser': 7.24.1
+      '@babel/parser': 7.24.4
       '@vue/compiler-core': 3.3.4
       '@vue/compiler-dom': 3.3.4
       '@vue/compiler-ssr': 3.3.4
@@ -13887,7 +13890,7 @@ snapshots:
 
   '@vue/reactivity-transform@3.3.4':
     dependencies:
-      '@babel/parser': 7.24.1
+      '@babel/parser': 7.24.4
       '@vue/compiler-core': 3.3.4
       '@vue/shared': 3.3.4
       estree-walker: 2.0.2
