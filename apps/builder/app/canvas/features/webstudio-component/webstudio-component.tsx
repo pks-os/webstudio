@@ -31,7 +31,7 @@ import {
 } from "@webstudio-is/react-sdk";
 import { rawTheme } from "@webstudio-is/design-system";
 import {
-  $propValuesByInstanceSelector,
+  $propValuesByInstanceSelectorWithMemoryProps,
   getIndexedInstanceId,
   $instances,
   $registeredComponentMetas,
@@ -101,9 +101,11 @@ const ContentEditable = ({
   return renderComponentWithRef(ref);
 };
 
-const MissingComponentStub = forwardRef<
+const ErrorStub = forwardRef<
   HTMLDivElement,
-  { children?: ReactNode }
+  {
+    children?: ReactNode;
+  }
 >((props, ref) => {
   return (
     <div
@@ -114,24 +116,55 @@ const MissingComponentStub = forwardRef<
         border: `1px solid ${rawTheme.colors.borderDestructiveMain}`,
         color: rawTheme.colors.foregroundDestructive,
       }}
-    >
-      Component {props[componentAttribute as never]} does not exist
-    </div>
+    />
   );
 });
+ErrorStub.displayName = "ErrorStub";
 
+const MissingComponentStub = forwardRef<
+  HTMLDivElement,
+  { children?: ReactNode }
+>((props, ref) => {
+  return (
+    <ErrorStub ref={ref} {...props}>
+      Component {props[componentAttribute as never]} does not exist
+    </ErrorStub>
+  );
+});
 MissingComponentStub.displayName = "MissingComponentStub";
+
+const InvalidCollectionDataStub = forwardRef<
+  HTMLDivElement,
+  { children?: ReactNode }
+>((props, ref) => {
+  return (
+    <ErrorStub ref={ref} {...props}>
+      The Collection component requires an array in the data property. When
+      binding external data, it is likely that the array is nested somewhere
+      within, and you need to provide the correct path in the binding.{" "}
+      <a
+        style={{ color: "inherit" }}
+        target="_blank"
+        href="https://docs.webstudio.is/university/core-components/collection.md#whats-an-array"
+        // avoid preventing click by events interceptor
+        onClickCapture={(event) => event.stopPropagation()}
+      >
+        Learn more
+      </a>
+    </ErrorStub>
+  );
+});
+InvalidCollectionDataStub.displayName = "InvalidCollectionDataStub";
 
 const DroppableComponentStub = forwardRef<
   HTMLDivElement,
   { children?: ReactNode }
 >((props, ref) => {
   return (
-    <div
-      {...props}
-      ref={ref}
-      style={{ display: props.children ? "contents" : "block" }}
-    />
+    <div {...props} ref={ref} style={{ display: "block" }}>
+      {/* explicitly specify undefined to override passed children */}
+      {undefined}
+    </div>
   );
 });
 DroppableComponentStub.displayName = "DroppableComponentStub";
@@ -183,7 +216,7 @@ const useInstanceProps = (instanceSelector: InstanceSelector) => {
   const [instanceId] = instanceSelector;
   const $instancePropsObject = useMemo(() => {
     return computed(
-      [$propValuesByInstanceSelector, $indexesWithinAncestors],
+      [$propValuesByInstanceSelectorWithMemoryProps, $indexesWithinAncestors],
       (propValuesByInstanceSelector, indexesWithinAncestors) => {
         const instancePropsObject: Record<Prop["name"], unknown> = {};
         const index = indexesWithinAncestors.get(instanceId);
@@ -277,7 +310,6 @@ export const WebstudioComponentCanvas = forwardRef<
   HTMLElement,
   WebstudioComponentProps
 >(({ instance, instanceSelector, components, ...restProps }, ref) => {
-  const rootRef = useRef<null | HTMLDivElement>(null);
   const instanceId = instance.id;
   const instances = useStore($instances);
 
@@ -328,8 +360,10 @@ export const WebstudioComponentCanvas = forwardRef<
 
   if (instance.component === collectionComponent) {
     const data = instanceProps.data;
-    // render stub component when no data or children
-    if (
+    if (data && Array.isArray(data) === false) {
+      Component = InvalidCollectionDataStub as AnyComponent;
+    } else if (
+      // render stub component when no data or children
       Array.isArray(data) &&
       data.length > 0 &&
       instance.children.length > 0
@@ -351,8 +385,9 @@ export const WebstudioComponentCanvas = forwardRef<
           </Fragment>
         );
       });
+    } else {
+      Component = DroppableComponentStub as AnyComponent;
     }
-    Component = DroppableComponentStub as AnyComponent;
   }
 
   if (instance.component === descendantComponent) {
@@ -372,9 +407,14 @@ export const WebstudioComponentCanvas = forwardRef<
     [idAttribute]: instance.id,
   };
 
+  // React ignores defaultValue changes after first render.
+  // Key prop forces re-creation to reflect updates on canvas.
+  const key =
+    props.defaultValue != null ? props.defaultValue.toString() : undefined;
+
   const instanceElement = (
     <>
-      <Component {...props} ref={mergeRefs(ref, rootRef)}>
+      <Component key={key} {...props} ref={ref}>
         {children}
       </Component>
     </>
@@ -391,13 +431,12 @@ export const WebstudioComponentCanvas = forwardRef<
   return (
     <Suspense fallback={instanceElement}>
       <TextEditor
-        rootRef={rootRef}
         rootInstanceSelector={instanceSelector}
         instances={instances}
         contentEditable={
           <ContentEditable
             renderComponentWithRef={(elementRef) => (
-              <Component {...props} ref={mergeRefs(ref, elementRef, rootRef)}>
+              <Component {...props} ref={mergeRefs(ref, elementRef)}>
                 {initialContentEditableContent.current}
               </Component>
             )}
@@ -449,7 +488,7 @@ export const WebstudioComponentPreview = forwardRef<
 
   if (instance.component === collectionComponent) {
     const data = instanceProps.data;
-    // render stub component when no data or children
+    // render nothing when no data or children
     if (
       Array.isArray(data) &&
       data.length > 0 &&

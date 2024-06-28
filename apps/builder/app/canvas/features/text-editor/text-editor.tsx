@@ -14,7 +14,7 @@ import { LinkNode } from "@lexical/link";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
-import LexicalErrorBoundary from "@lexical/react/LexicalErrorBoundary";
+import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { nanoid } from "nanoid";
@@ -23,12 +23,7 @@ import type { Instance, Instances } from "@webstudio-is/sdk";
 import { idAttribute } from "@webstudio-is/react-sdk";
 import type { InstanceSelector } from "~/shared/tree-utils";
 import { ToolbarConnectorPlugin } from "./toolbar-connector";
-import {
-  type Refs,
-  $convertToLexical,
-  $convertToUpdates,
-  $convertTextToLexical,
-} from "./interop";
+import { type Refs, $convertToLexical, $convertToUpdates } from "./interop";
 import { colord } from "colord";
 import { useEffectEvent } from "~/shared/hook-utils/effect-event";
 
@@ -201,7 +196,6 @@ const onError = (error: Error) => {
 };
 
 type TextEditorProps = {
-  rootRef: { current: null | HTMLDivElement };
   rootInstanceSelector: InstanceSelector;
   instances: Instances;
   contentEditable: JSX.Element;
@@ -210,7 +204,6 @@ type TextEditorProps = {
 };
 
 export const TextEditor = ({
-  rootRef,
   rootInstanceSelector,
   instances,
   contentEditable,
@@ -251,15 +244,7 @@ export const TextEditor = ({
       },
     },
     editorState: () => {
-      const textContent = (rootRef.current?.textContent ?? "").trim();
       const [rootInstanceId] = rootInstanceSelector;
-      if (textContent.length !== 0) {
-        const rootInstance = instances.get(rootInstanceId);
-        if (rootInstance && rootInstance.children.length === 0) {
-          $convertTextToLexical(textContent);
-          return;
-        }
-      }
       // text editor is unmounted when change properties in side panel
       // so assume new nodes don't need to preserve instance id
       // and store only initial references

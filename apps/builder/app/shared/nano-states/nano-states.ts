@@ -29,6 +29,8 @@ import type { htmlTags as HtmlTags } from "html-tags";
 import { $instances, $selectedInstanceSelector } from "./instances";
 import { $selectedPage } from "./pages";
 import type { UnitSizes } from "~/builder/features/style-panel/shared/css-value-input/convert-units";
+import type { Simplify } from "type-fest";
+import type { AssetType } from "@webstudio-is/asset-uploader";
 
 export const $project = atom<Project | undefined>();
 
@@ -58,6 +60,9 @@ export const $dataSources = atom<DataSources>(new Map());
 export const $resources = atom(new Map<Resource["id"], Resource>());
 
 export const $props = atom<Props>(new Map());
+
+export const $memoryProps = atom<Map<string, Props>>(new Map());
+
 export const $propsIndex = computed($props, (props) => {
   const propsByInstanceId = new Map<Instance["id"], Prop[]>();
   for (const prop of props.values()) {
@@ -153,6 +158,26 @@ export const $stylesIndex = computed(
 );
 
 export const $assets = atom<Assets>(new Map());
+
+export type UploadingFileData = Simplify<
+  {
+    // common props
+    assetId: string;
+    type: AssetType;
+    objectURL: string;
+  } & (
+    | {
+        source: "file";
+        file: File;
+      }
+    | {
+        source: "url";
+        url: string;
+      }
+  )
+>;
+
+export const $uploadingFilesDataStore = atom<UploadingFileData[]>([]);
 
 export const $selectedInstanceBrowserStyle = atom<undefined | Style>();
 
@@ -331,5 +356,3 @@ export const $dragAndDropState = atom<DragAndDropState>({
 });
 
 export const $marketplaceProduct = atom<undefined | MarketplaceProduct>();
-
-export const $inspectorLastInputTime = atom<number>(0);

@@ -9,7 +9,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type RefObject,
 } from "react";
 import { useStore } from "@nanostores/react";
 import type { DataSource, Resource } from "@webstudio-is/sdk";
@@ -50,7 +49,6 @@ import {
   BindingPopover,
   evaluateExpressionWithinScope,
 } from "~/builder/shared/binding-popover";
-import { type ComposedFields, composeFields } from "~/shared/form-utils";
 import { ExpressionEditor } from "~/builder/shared/expression-editor";
 import {
   EditorDialog,
@@ -58,45 +56,6 @@ import {
   EditorDialogControl,
 } from "~/builder/shared/code-editor-base";
 import { parseCurl, type CurlRequest } from "./curl";
-
-export const composeWithNativeForm = (
-  formAccessorRef: RefObject<HTMLInputElement>,
-  form: ComposedFields
-): ComposedFields => {
-  return {
-    isValid() {
-      const formElement = formAccessorRef.current?.form;
-      return form.isValid() && formElement?.checkValidity() === true;
-    },
-    areAllErrorsVisible() {
-      const formElement = formAccessorRef.current?.form;
-      // check all errors in form fields are visible
-      if (formElement) {
-        for (const element of formElement.elements) {
-          if (
-            element instanceof HTMLInputElement ||
-            element instanceof HTMLTextAreaElement
-          ) {
-            // field is invalid and the error is not visible
-            if (
-              element.validity.valid === false &&
-              // rely on data-color=error convention in webstudio design system
-              element.getAttribute("data-color") !== "error"
-            ) {
-              return false;
-            }
-          }
-        }
-      }
-      return form.areAllErrorsVisible();
-    },
-    showAllErrors() {
-      const formElement = formAccessorRef.current?.form;
-      formElement?.checkValidity();
-      form.showAllErrors();
-    },
-  };
-};
 
 const validateUrl = (value: string, scope: Record<string, unknown>) => {
   const evaluatedValue = evaluateExpressionWithinScope(value, scope);
@@ -125,7 +84,7 @@ const UrlField = ({
   scope: Record<string, unknown>;
   value: string;
   onChange: (value: string) => void;
-  onCurlPaste?: (curl: CurlRequest) => void;
+  onCurlPaste: (curl: CurlRequest) => void;
 }) => {
   const urlId = useId();
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -165,7 +124,7 @@ const UrlField = ({
             value={String(evaluateExpressionWithinScope(value, scope))}
             onChange={(value) => {
               const curl = parseCurl(value);
-              if (curl && onCurlPaste) {
+              if (curl) {
                 onCurlPaste(curl);
               } else {
                 // update text value as string literal
@@ -476,8 +435,8 @@ const useScope = ({ variable }: { variable?: DataSource }) => {
   return { scope, aliases };
 };
 
-type PanelApi = ComposedFields & {
-  save: () => void;
+type PanelApi = {
+  save: (formData: FormData) => void;
 };
 
 const validateBody = (
@@ -620,16 +579,12 @@ export const ResourceForm = forwardRef<
     ? evaluateExpressionWithinScope(contentType, scope)
     : undefined;
 
-  const formAccessorRef = useRef<HTMLInputElement>(null);
-  const form = composeWithNativeForm(formAccessorRef, composeFields());
   useImperativeHandle(ref, () => ({
-    ...form,
-    save: () => {
+    save: (formData) => {
       const instanceSelector = $selectedInstanceSelector.get();
       if (instanceSelector === undefined) {
         return;
       }
-      const formData = new FormData(formAccessorRef.current?.form ?? undefined);
       const name = z.string().parse(formData.get("name"));
       const [instanceId] = instanceSelector;
       const newResource: Resource = {
@@ -660,7 +615,6 @@ export const ResourceForm = forwardRef<
 
   return (
     <>
-      <input ref={formAccessorRef} type="hidden" name="form-accessor" />
       <UrlField
         scope={scope}
         aliases={aliases}
@@ -759,17 +713,12 @@ export const SystemResourceForm = forwardRef<
     );
   });
 
-  const formAccessorRef = useRef<HTMLInputElement>(null);
-  const form = composeWithNativeForm(formAccessorRef, composeFields());
-
   useImperativeHandle(ref, () => ({
-    ...form,
-    save: () => {
+    save: (formData) => {
       const instanceSelector = $selectedInstanceSelector.get();
       if (instanceSelector === undefined) {
         return;
       }
-      const formData = new FormData(formAccessorRef.current?.form ?? undefined);
       const name = z.string().parse(formData.get("name"));
       const [instanceId] = instanceSelector;
       const newResource: Resource = {
@@ -802,7 +751,6 @@ export const SystemResourceForm = forwardRef<
 
   return (
     <>
-      <input ref={formAccessorRef} type="hidden" name="form-accessor" />
       <Flex direction="column" css={{ gap: theme.spacing[3] }}>
         <Label htmlFor={resourceId}>Resource</Label>
         <Select
@@ -824,6 +772,11 @@ export const SystemResourceForm = forwardRef<
   );
 });
 SystemResourceForm.displayName = "SystemResourceForm";
+
+const zGraphqlBody = z.object({
+  query: z.string(),
+  variables: z.optional(z.record(z.unknown())),
+});
 
 export const GraphqlResourceForm = forwardRef<
   undefined | PanelApi,
@@ -871,16 +824,12 @@ export const GraphqlResourceForm = forwardRef<
     setVariablesError("");
   }, [variables, scope]);
 
-  const formAccessorRef = useRef<HTMLInputElement>(null);
-  const form = composeWithNativeForm(formAccessorRef, composeFields());
   useImperativeHandle(ref, () => ({
-    ...form,
-    save: () => {
+    save: (formData) => {
       const instanceSelector = $selectedInstanceSelector.get();
       if (instanceSelector === undefined) {
         return;
       }
-      const formData = new FormData(formAccessorRef.current?.form ?? undefined);
       const name = z.string().parse(formData.get("name"));
       const body = generateObjectExpression(
         new Map([
@@ -918,8 +867,27 @@ export const GraphqlResourceForm = forwardRef<
 
   return (
     <>
-      <input ref={formAccessorRef} type="hidden" name="form-accessor" />
-      <UrlField scope={scope} aliases={aliases} value={url} onChange={setUrl} />
+      <UrlField
+        scope={scope}
+        aliases={aliases}
+        value={url}
+        onChange={setUrl}
+        onCurlPaste={(curl) => {
+          // update all feilds when curl is paste into url field
+          setUrl(JSON.stringify(curl.url));
+          setHeaders(
+            curl.headers.map((header) => ({
+              name: header.name,
+              value: JSON.stringify(header.value),
+            }))
+          );
+          const body = zGraphqlBody.safeParse(curl.body);
+          if (body.success) {
+            setQuery(body.data.query);
+            setVariables(JSON.stringify(body.data.variables, null, 2));
+          }
+        }}
+      />
 
       <Grid gap={1}>
         <Label htmlFor={queryId}>Query</Label>

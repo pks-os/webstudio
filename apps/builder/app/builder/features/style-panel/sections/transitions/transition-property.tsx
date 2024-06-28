@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   animatableProperties,
+  commonTransitionProperties,
   isAnimatableProperty,
 } from "@webstudio-is/css-data";
 import {
@@ -22,28 +23,19 @@ import {
 } from "@webstudio-is/design-system";
 import type { KeywordValue } from "@webstudio-is/css-engine";
 import { matchSorter } from "match-sorter";
+import { setUnion } from "~/shared/shim";
 
 type AnimatableProperties = (typeof animatableProperties)[number];
-type NameAndLabel = { name: AnimatableProperties; label?: string };
+type NameAndLabel = { name: string; label?: string };
 type TransitionPropertyProps = {
   property: KeywordValue;
   onPropertySelection: (params: { property: KeywordValue }) => void;
 };
 
-const commonPropertiesSet = new Set<AnimatableProperties>([
-  "all",
-  "opacity",
-  "margin",
-  "padding",
-  "border",
-  "transform",
-  "filter",
-  "flex",
-  "background-color",
-]);
+const commonPropertiesSet = new Set(commonTransitionProperties);
 
-const filteredPropertiesSet = new Set<AnimatableProperties>(
-  animatableProperties.filter((item) => commonPropertiesSet.has(item) === false)
+const properties = Array.from(
+  setUnion(commonPropertiesSet, new Set(animatableProperties))
 );
 
 export const TransitionProperty = ({
@@ -62,10 +54,7 @@ export const TransitionProperty = ({
     getMenuProps,
     getItemProps,
   } = useCombobox<NameAndLabel>({
-    items: [
-      ...Array.from(commonPropertiesSet),
-      ...Array.from(filteredPropertiesSet),
-    ].map((prop) => ({
+    items: properties.map((prop) => ({
       name: prop,
       label: prop,
     })),

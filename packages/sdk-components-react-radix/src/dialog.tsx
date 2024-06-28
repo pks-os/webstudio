@@ -12,6 +12,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   ReactSdkContext,
   getClosestInstance,
+  getInstanceSelectorById,
   type Hook,
 } from "@webstudio-is/react-sdk";
 
@@ -177,7 +178,7 @@ export const DialogTitle = forwardRef<
 >(({ tag: Tag = defaultTag, children, ...props }, ref) => (
   <DialogPrimitive.DialogTitle asChild>
     <Tag ref={ref} {...props}>
-      {children ?? "Heading title you can edit"}
+      {children}
     </Tag>
   </DialogPrimitive.DialogTitle>
 ));
@@ -201,7 +202,11 @@ export const hooksDialog: Hook = {
           `${namespace}:Dialog`
         );
         if (dialog) {
-          context.setPropVariable(dialog.id, "open", false);
+          const instanceSelector = getInstanceSelectorById(
+            event.instanceSelector,
+            dialog.id
+          );
+          context.setMemoryProp(instanceSelector, "open", undefined);
         }
       }
     }
@@ -214,8 +219,14 @@ export const hooksDialog: Hook = {
           instance,
           `${namespace}:Dialog`
         );
+
         if (dialog) {
-          context.setPropVariable(dialog.id, "open", true);
+          const instanceSelector = getInstanceSelectorById(
+            event.instanceSelector,
+            dialog.id
+          );
+
+          context.setMemoryProp(instanceSelector, "open", true);
         }
       }
     }

@@ -81,7 +81,6 @@ export const loader = async (arg: LoaderFunctionArgs) => {
       status: pageMeta.status,
       headers: {
         "Cache-Control": "public, max-age=600",
-        "x-ws-language": pageMeta.language ?? "en",
       },
     }
   );
@@ -90,7 +89,6 @@ export const loader = async (arg: LoaderFunctionArgs) => {
 export const headers: HeadersFunction = ({ loaderHeaders }) => {
   return {
     "Cache-Control": "public, max-age=0, must-revalidate",
-    "x-ws-language": loaderHeaders.get("x-ws-language") ?? "",
   };
 };
 
@@ -188,23 +186,14 @@ export const links: LinksFunction = () => {
       rel: "icon",
       href: imageLoader({
         src: favIconAsset.name,
-        width: 128,
+        // width,height must be multiple of 48 https://developers.google.com/search/docs/appearance/favicon-in-search
+        width: 144,
+        height: 144,
+        fit: "pad",
         quality: 100,
         format: "auto",
       }),
       type: undefined,
-    });
-  } else {
-    result.push({
-      rel: "icon",
-      href: "/favicon.ico",
-      type: "image/x-icon",
-    });
-
-    result.push({
-      rel: "shortcut icon",
-      href: "/favicon.ico",
-      type: "image/x-icon",
     });
   }
 
@@ -327,7 +316,7 @@ export const action = async ({
 };
 
 const Outlet = () => {
-  const { system, resources } = useLoaderData<typeof loader>();
+  const { system, resources, url } = useLoaderData<typeof loader>();
   return (
     <ReactSdkContext.Provider
       value={{
@@ -337,7 +326,8 @@ const Outlet = () => {
         resources,
       }}
     >
-      <Page system={system} />
+      {/* Use the URL as the key to force scripts in HTML Embed to reload on dynamic pages */}
+      <Page key={url} system={system} />
     </ReactSdkContext.Provider>
   );
 };

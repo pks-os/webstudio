@@ -6,6 +6,7 @@ import type {
   Prop,
   ResourceRequest,
   System,
+  ImageAsset,
 } from "@webstudio-is/sdk";
 import {
   decodeDataSourceVariable,
@@ -19,10 +20,18 @@ import {
   textContentAttribute,
 } from "@webstudio-is/react-sdk";
 import { isFeatureEnabled } from "@webstudio-is/feature-flags";
+import { mapGroupBy } from "~/shared/shim";
 import { $instances } from "./instances";
-import { $dataSources, $props, $assets, $resources } from "./nano-states";
+import {
+  $dataSources,
+  $props,
+  $assets,
+  $resources,
+  $uploadingFilesDataStore,
+  $memoryProps,
+  $isPreviewMode,
+} from "./nano-states";
 import { $selectedPage, $pages } from "./pages";
-import { groupBy } from "../array-utils";
 import type { InstanceSelector } from "../tree-utils";
 import { $params } from "~/canvas/stores";
 import { restResourcesLoader } from "../router-utils";
@@ -32,6 +41,7 @@ import {
   $selectedPageDefaultSystem,
   mergeSystem,
 } from "./variables";
+import { uploadingFileDataToAsset } from "~/builder/shared/assets/asset-utils";
 
 export const getIndexedInstanceId = (
   instanceId: Instance["id"],
@@ -151,6 +161,11 @@ const $unscopedVariableValues = computed(
   }
 );
 
+const $selectedPageSystemId = computed(
+  $selectedPage,
+  (page) => page?.systemDataSourceId
+);
+
 /**
  * similar to above but should not depend on resource values
  * because these values are used to load resources
@@ -161,10 +176,10 @@ const $loaderVariableValues = computed(
   [
     $dataSources,
     $dataSourceVariables,
-    $selectedPage,
+    $selectedPageSystemId,
     $selectedPageDefaultSystem,
   ],
-  (dataSources, dataSourceVariables, page, defaultSystem) => {
+  (dataSources, dataSourceVariables, systemId, defaultSystem) => {
     const values = new Map<string, unknown>();
     for (const [dataSourceId, dataSource] of dataSources) {
       if (dataSource.type === "variable") {
@@ -175,7 +190,7 @@ const $loaderVariableValues = computed(
       }
       if (dataSource.type === "parameter") {
         let value = dataSourceVariables.get(dataSourceId);
-        if (dataSource.id === page?.systemDataSourceId) {
+        if (dataSource.id === systemId) {
           value = mergeSystem(defaultSystem, value as undefined | System);
         }
         values.set(dataSourceId, value);
@@ -230,24 +245,41 @@ export const $propValuesByInstanceSelector = computed(
     $params,
     $pages,
     $assets,
+    $uploadingFilesDataStore,
   ],
-  (instances, props, page, unscopedVariableValues, params, pages, assets) => {
+  (
+    instances,
+    props,
+    page,
+    unscopedVariableValues,
+    params,
+    pages,
+    assets,
+    uploadingFilesDataStore
+  ) => {
     const variableValues = new Map<string, unknown>(unscopedVariableValues);
 
     let propsList = Array.from(props.values());
 
     // ignore asset and page props when params is not provided
     if (params && pages) {
+      const uploadingImageAssets = uploadingFilesDataStore
+        .map(uploadingFileDataToAsset)
+        .filter(<T>(value: T): value is NonNullable<T> => value !== undefined)
+        .filter((asset): asset is ImageAsset => asset.type === "image");
+
       // use whole props list to let access hash props from other pages and instances
       propsList = normalizeProps({
         props: propsList,
         assetBaseUrl: params.assetBaseUrl,
         assets,
+        uploadingImageAssets,
         pages,
+        source: "canvas",
       });
     }
     // collect props and group by instances
-    const propsByInstanceId = groupBy(propsList, (prop) => prop.instanceId);
+    const propsByInstanceId = mapGroupBy(propsList, (prop) => prop.instanceId);
 
     // traverse instances tree and compute props within each instance
     const propValuesByInstanceSelector = new Map<
@@ -267,8 +299,23 @@ export const $propValuesByInstanceSelector = computed(
       const propValues = new Map<Prop["name"], unknown>();
       const props = propsByInstanceId.get(instanceId);
       const parameters = new Map<Prop["name"], DataSource["id"]>();
+
       if (props) {
         for (const prop of props) {
+          if (prop.type === "asset" && prop.name === "width") {
+            const asset = assets.get(prop.value);
+            if (asset?.type === "image") {
+              propValues.set("width", asset.meta.width);
+            }
+          }
+
+          if (prop.type === "asset" && prop.name === "height") {
+            const asset = assets.get(prop.value);
+            if (asset?.type === "image") {
+              propValues.set("height", asset.meta.height);
+            }
+          }
+
           // at this point asset and page either already converted to string
           // or can be ignored
           if (prop.type === "asset" || prop.type === "page") {
@@ -300,6 +347,7 @@ export const $propValuesByInstanceSelector = computed(
         JSON.stringify(instanceSelector),
         propValues
       );
+
       if (instance.component === collectionComponent) {
         const data = propValues.get("data");
         const itemVariableId = parameters.get("item");
@@ -332,7 +380,30 @@ export const $propValuesByInstanceSelector = computed(
         }
       }
     };
+
     traverseInstances([page.rootInstanceId]);
+
+    return propValuesByInstanceSelector;
+  }
+);
+
+export const $propValuesByInstanceSelectorWithMemoryProps = computed(
+  [$propValuesByInstanceSelector, $memoryProps, $isPreviewMode],
+  (propValuesByInstanceSelector, memoryProps, isPreviewMode) => {
+    if (false === isPreviewMode) {
+      const result = new Map(propValuesByInstanceSelector);
+
+      for (const [memoryKey, memoryValue] of memoryProps) {
+        const propsBySelector = new Map(result.get(memoryKey));
+
+        for (const [memoryProp, memoryPropValue] of memoryValue) {
+          propsBySelector.set(memoryProp, memoryPropValue.value);
+        }
+
+        result.set(memoryKey, propsBySelector);
+      }
+      return result;
+    }
     return propValuesByInstanceSelector;
   }
 );
@@ -356,12 +427,12 @@ export const $variableValuesByInstanceSelector = computed(
     resourceValues,
     defaultSystem
   ) => {
-    const propsByInstanceId = groupBy(
+    const propsByInstanceId = mapGroupBy(
       props.values(),
       (prop) => prop.instanceId
     );
 
-    const variablesByInstanceId = groupBy(
+    const variablesByInstanceId = mapGroupBy(
       dataSources.values(),
       (dataSource) => dataSource.scopeInstanceId
     );
@@ -568,39 +639,47 @@ export const invalidateResource = (resourceId: Resource["id"]) => {
  * and store in cache
  */
 export const subscribeResources = () => {
+  let frameId: undefined | number;
   // subscribe changing resources or global invalidation
   return computed(
     [$computedResources, $invalidator],
     (computedResources, invalidator) =>
       [computedResources, invalidator] as const
-  ).subscribe(async ([computedResources]) => {
-    const matched = new Map<Resource["id"], ResourceRequest>();
-    const missing = new Map<Resource["id"], ResourceRequest>();
-    for (const request of computedResources) {
-      const cacheKey = JSON.stringify(request);
-      if (cacheByKeys.has(cacheKey)) {
-        matched.set(request.id, request);
-      } else {
-        missing.set(request.id, request);
+  ).subscribe(([computedResources]) => {
+    if (frameId) {
+      cancelAnimationFrame(frameId);
+    }
+    // batch updates into next frame
+    // to avoid issues with untransactioned updates in nanostores
+    frameId = requestAnimationFrame(async () => {
+      const matched = new Map<Resource["id"], ResourceRequest>();
+      const missing = new Map<Resource["id"], ResourceRequest>();
+      for (const request of computedResources) {
+        const cacheKey = JSON.stringify(request);
+        if (cacheByKeys.has(cacheKey)) {
+          matched.set(request.id, request);
+        } else {
+          missing.set(request.id, request);
+        }
       }
-    }
 
-    // preset undefined to prevent loading already requested data
-    for (const request of missing.values()) {
-      const cacheKey = JSON.stringify(request);
-      cacheByKeys.set(cacheKey, undefined);
-    }
+      // preset undefined to prevent loading already requested data
+      for (const request of missing.values()) {
+        const cacheKey = JSON.stringify(request);
+        cacheByKeys.set(cacheKey, undefined);
+      }
 
-    const result = await loadResources(Array.from(missing.values()));
-    const newResourceValues = new Map();
-    for (const request of computedResources) {
-      const cacheKey = JSON.stringify(request);
-      // read from cache or store in cache
-      const response = result.get(request.id) ?? cacheByKeys.get(cacheKey);
-      cacheByKeys.set(cacheKey, response);
-      newResourceValues.set(request.id, response);
-    }
-    // update resource values only when new resources are loaded
-    $resourceValues.set(newResourceValues);
+      const result = await loadResources(Array.from(missing.values()));
+      const newResourceValues = new Map();
+      for (const request of computedResources) {
+        const cacheKey = JSON.stringify(request);
+        // read from cache or store in cache
+        const response = result.get(request.id) ?? cacheByKeys.get(cacheKey);
+        cacheByKeys.set(cacheKey, response);
+        newResourceValues.set(request.id, response);
+      }
+      // update resource values only when new resources are loaded
+      $resourceValues.set(newResourceValues);
+    });
   });
 };

@@ -41,6 +41,10 @@ type LayerListProps = SectionProps & {
   label: string;
   property: StyleProperty;
   value: TupleValue | LayersValue;
+  deleteProperty: DeleteProperty;
+  deleteLayer?: (index: number) => boolean | void;
+  swapLayers?: (oldIndex: number, newIndex: number) => void;
+  hideLayer?: (index: number) => void;
   renderContent: (props: {
     index: number;
     layer: TupleValue | FunctionValue;
@@ -58,7 +62,8 @@ type LayerListProps = SectionProps & {
 
 const extractPropertiesFromLayer = (layer: TupleValue | FunctionValue) => {
   if (layer.type === "function") {
-    return { name: toValue(layer), value: toValue(layer), color: undefined };
+    const value = `${layer.name}(${toValue(layer.args)})`;
+    return { name: value, value, color: undefined };
   }
 
   const name = [];
@@ -84,20 +89,27 @@ const extractPropertiesFromLayer = (layer: TupleValue | FunctionValue) => {
       }
       shadow.push(item.value);
     }
+
+    if (item.type === "function") {
+      const value = `${item.name}(${toValue(item.args)})`;
+      name.push(value);
+      shadow.push(value);
+    }
   }
 
   return { name: name.join(" "), value: shadow.join(" "), color };
 };
 
-export const LayersList = ({
-  label,
-  property,
-  value,
-  currentStyle,
-  createBatchUpdate,
-  renderContent,
-  deleteProperty,
-}: LayerListProps) => {
+export const LayersList = (props: LayerListProps) => {
+  const {
+    label,
+    property,
+    value,
+    currentStyle,
+    createBatchUpdate,
+    renderContent,
+    deleteProperty,
+  } = props;
   const layersCount = getLayerCount(property, currentStyle);
 
   const sortableItems = useMemo(
@@ -111,20 +123,28 @@ export const LayersList = ({
 
   const { dragItemId, placementIndicator, sortableRefCallback } = useSortable({
     items: sortableItems,
-    onSort: (newIndex, oldIndex) => {
-      swapLayers(property, newIndex, oldIndex, currentStyle, createBatchUpdate);
-    },
+    onSort: (newIndex, oldIndex) =>
+      props.swapLayers
+        ? props.swapLayers(oldIndex, newIndex)
+        : swapLayers(
+            property,
+            newIndex,
+            oldIndex,
+            currentStyle,
+            createBatchUpdate
+          ),
   });
 
   const handleDeleteLayer = (index: number) => {
-    return deleteLayer(property, index, value, createBatchUpdate);
+    return props?.deleteLayer
+      ? props.deleteLayer(index)
+      : deleteLayer(property, index, value, createBatchUpdate);
   };
 
   const handleHideLayer = (index: number) => {
-    if (value.type === "tuple") {
-      return;
-    }
-    return hideLayer(property, index, value, createBatchUpdate);
+    return props?.hideLayer
+      ? props.hideLayer(index)
+      : hideLayer(property, index, value, createBatchUpdate);
   };
 
   const onEditLayer = (
@@ -146,12 +166,19 @@ export const LayersList = ({
     <CssValueListArrowFocus dragItemId={dragItemId}>
       <Flex direction="column" ref={sortableRefCallback}>
         {value.value.map((layer, index) => {
-          if (layer.type !== "tuple" && layer.type !== "function") {
+          // Because we are using a tuple or function to represent the layers,
+          // We use tuple for text-shadow and box-shadow properties
+          // and function for filter and backdrop-filter property
+
+          const isLayerATupleOrFunction =
+            layer.type === "tuple" || layer.type === "function";
+
+          if (isLayerATupleOrFunction === false) {
             return;
           }
+
           const id = String(index);
           const properties = extractPropertiesFromLayer(layer);
-          const { name, value, color } = properties;
 
           return (
             <FloatingPanel
@@ -162,26 +189,29 @@ export const LayersList = ({
                 property,
                 layer,
                 onEditLayer,
-                propertyValue: value,
+                propertyValue: properties.value,
                 onDeleteLayer: handleDeleteLayer,
                 deleteProperty,
               })}
             >
               <CssValueListItem
                 id={id}
-                draggable={true}
+                draggable={value.value.length > 1}
                 active={dragItemId === id}
                 index={index}
-                label={<Label truncate>{name}</Label>}
-                hidden={layer.type === "tuple" && layer?.hidden}
+                label={<Label truncate>{properties.name}</Label>}
+                hidden={
+                  (layer.type === "tuple" || layer.type === "function") &&
+                  layer?.hidden
+                }
                 thumbnail={
                   property === "textShadow" || property === "boxShadow" ? (
-                    <ColorThumb color={color} />
+                    <ColorThumb color={properties.color} />
                   ) : undefined
                 }
                 buttons={
                   <>
-                    {layer.type === "tuple" ? (
+                    {layer.type === "tuple" || layer.type === "function" ? (
                       <SmallToggleButton
                         variant="normal"
                         pressed={layer?.hidden}
@@ -200,7 +230,10 @@ export const LayersList = ({
                     <SmallIconButton
                       variant="destructive"
                       tabIndex={-1}
-                      disabled={layer.type === "tuple" && layer.hidden}
+                      disabled={
+                        (layer.type === "tuple" || layer.type === "function") &&
+                        layer.hidden
+                      }
                       icon={<SubtractIcon />}
                       onClick={() => handleDeleteLayer(index)}
                     />

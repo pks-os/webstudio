@@ -1,23 +1,29 @@
 import { colord } from "colord";
 import * as csstree from "css-tree";
-import hyphenate from "hyphenate-style-name";
 import warnOnce from "warn-once";
 import {
   TupleValue,
+  hyphenateProperty,
   type StyleProperty,
   type StyleValue,
   type Unit,
 } from "@webstudio-is/css-engine";
 import { keywordValues } from "./__generated__/keyword-values";
 import { units } from "./__generated__/units";
-import { parseFilter, parseShadow, parseTransition } from "./property-parsers";
+import {
+  isTransitionLongHandProperty,
+  parseFilter,
+  parseShadow,
+  parseTransitionLonghandProperty,
+} from "./property-parsers";
+import { camelCase } from "change-case";
 
 export const cssTryParseValue = (input: string) => {
   try {
     const ast = csstree.parse(input, { context: "value" });
     return ast;
   } catch {
-    return undefined;
+    return;
   }
 };
 
@@ -27,7 +33,26 @@ export const isValidDeclaration = (
   property: string,
   value: string
 ): boolean => {
-  const cssPropertyName = hyphenate(property);
+  const cssPropertyName = hyphenateProperty(property);
+
+  // these properties have poor support natively and in csstree
+  // though rendered styles are merged as shorthand
+  // so validate artifically
+  if (cssPropertyName === "white-space-collapse") {
+    return keywordValues.whiteSpaceCollapse.includes(
+      value as (typeof keywordValues.whiteSpaceCollapse)[0]
+    );
+  }
+  if (cssPropertyName === "text-wrap-mode") {
+    return keywordValues.textWrapMode.includes(
+      value as (typeof keywordValues.textWrapMode)[0]
+    );
+  }
+  if (cssPropertyName === "text-wrap-style") {
+    return keywordValues.textWrapStyle.includes(
+      value as (typeof keywordValues.textWrapStyle)[0]
+    );
+  }
 
   // @todo remove after csstree fixes
   // - https://github.com/csstree/csstree/issues/246
@@ -87,8 +112,8 @@ export const parseCssValue = (
     return parseShadow(property, input);
   }
 
-  if (property === "transition") {
-    return parseTransition(input);
+  if (isTransitionLongHandProperty(property)) {
+    return parseTransitionLonghandProperty(property, input);
   }
 
   if (
@@ -131,9 +156,14 @@ export const parseCssValue = (
     }
 
     if (first?.type === "Identifier") {
-      const values = keywordValues[
-        property as keyof typeof keywordValues
-      ] as ReadonlyArray<string>;
+      const values =
+        keywordValues[camelCase(property) as keyof typeof keywordValues];
+      if (values === undefined) {
+        return {
+          type: "invalid",
+          value: "",
+        };
+      }
       const lettersRegex = /[^a-zA-Z]+/g;
       const searchValues = values.map((value) =>
         value.replace(lettersRegex, "").toLowerCase()

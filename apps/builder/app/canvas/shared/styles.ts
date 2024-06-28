@@ -11,8 +11,8 @@ import {
   collapsedAttribute,
   idAttribute,
   addGlobalRules,
+  addPresetRules,
   createImageValueTransformer,
-  getPresetStyleRules,
   descendantComponent,
   type Params,
 } from "@webstudio-is/react-sdk";
@@ -36,7 +36,7 @@ import {
 } from "~/shared/nano-states";
 import { setDifference } from "~/shared/shim";
 import { $ephemeralStyles, $params } from "../stores";
-import { resetInert, setInert } from "./inert";
+import { canvasApi } from "~/shared/canvas-api";
 
 const userSheet = createRegularStyleSheet({ name: "user-styles" });
 const stateSheet = createRegularStyleSheet({ name: "state-styles" });
@@ -319,16 +319,7 @@ export const GlobalStyles = ({ params }: { params: Params }) => {
 
   useLayoutEffect(() => {
     presetSheet.clear();
-    for (const [component, meta] of metas) {
-      const presetStyle = meta.presetStyle;
-      if (presetStyle === undefined) {
-        continue;
-      }
-      const rules = getPresetStyleRules(component, presetStyle);
-      for (const [selector, style] of rules) {
-        presetSheet.addStyleRule({ style }, selector);
-      }
-    }
+    addPresetRules(presetSheet, metas);
     presetSheet.render();
   }, [metas]);
 
@@ -421,7 +412,7 @@ const subscribeEphemeralStyle = () => {
 
     // reset ephemeral styles
     if (ephemeralStyles.length === 0) {
-      resetInert();
+      canvasApi.resetInert();
       for (const styleDecl of appliedEphemeralDeclarations.values()) {
         // prematurely apply last known ephemeral update to user stylesheet
         // to avoid lag because of delay between deleting ephemeral style
@@ -442,7 +433,7 @@ const subscribeEphemeralStyle = () => {
 
     // add ephemeral styles
     if (ephemeralStyles.length > 0) {
-      setInert();
+      canvasApi.setInert();
       const selector = `[${idAttribute}="${instanceId}"]`;
       const rule = userSheet.addNestingRule(selector);
       let ephemetalSheetUpdated = false;
