@@ -4,7 +4,7 @@ import type {
   Instance,
   WebstudioFragment,
 } from "@webstudio-is/sdk";
-import type { WfElementNode, WfNode, WfStyle } from "./schema";
+import type { WfAsset, WfElementNode, WfNode, WfStyle } from "./schema";
 import { nanoid } from "nanoid";
 import { $breakpoints } from "~/shared/nano-states";
 import { parseCss, pseudoElements } from "@webstudio-is/css-data";
@@ -15,6 +15,7 @@ import { equalMedia } from "@webstudio-is/css-engine";
 import { isBaseBreakpoint } from "~/shared/breakpoints";
 import type { Styles as WfStylePresets } from "./__generated__/style-presets";
 import { builderApi } from "~/shared/builder-api";
+import { url } from "css-tree";
 
 const { toast } = builderApi;
 
@@ -77,6 +78,27 @@ const replaceAtVariables = (styles: string) => {
   return styles.replace(/@var_[\w-]+/g, "unset");
 };
 
+// Converts webflow asset references like `@img_667d0b7769e0cc3754b584f6` to valid urls like
+// url("https://667d0b7769e0cc3754b584f6") to not break csstree parser
+const replaceAtImages = (
+  styles: string,
+  wfAssets: Map<WfAsset["_id"], WfAsset>
+) => {
+  return styles.replace(/@img_[\w-]+/g, (match) => {
+    const assetId = match.slice(5);
+    const asset = wfAssets.get(assetId);
+
+    if (asset === undefined) {
+      if (assetId !== "example_bg") {
+        console.error(`Asset not found: ${assetId}`);
+      }
+      return `none`;
+    }
+
+    return url.encode(asset.s3Url);
+  });
+};
+
 type UnparsedVariants = Map<string, string | Array<EmbedTemplateStyleDecl>>;
 
 // Variants value can be wf styleLess string which is a styles block
@@ -91,9 +113,7 @@ const toParsedVariants = (variants: UnparsedVariants) => {
     const { breakpointName, state } = parseVariantName(variant);
     if (typeof styles === "string") {
       try {
-        const parsed =
-          parseCss(`.styles${state} {${replaceAtVariables(styles)}}`).styles ??
-          [];
+        const parsed = parseCss(`.styles${state} {${styles}}`).styles ?? [];
         const allBreakpointStyles = parsedVariants.get(breakpointName) ?? [];
         allBreakpointStyles.push(...parsed);
         parsedVariants.set(breakpointName, allBreakpointStyles);
@@ -298,6 +318,7 @@ const mapComponentAndPresetStyles = (
 export const addStyles = async (
   wfNodes: Map<WfNode["_id"], WfNode>,
   wfStyles: Map<WfStyle["_id"], WfStyle>,
+  wfAssets: Map<WfAsset["_id"], WfAsset>,
   doneNodes: Map<WfNode["_id"], Instance["id"] | false>,
   fragment: WebstudioFragment,
   generateStyleSourceId: (sourceData: string) => Promise<string>
@@ -352,12 +373,18 @@ export const addStyles = async (
         instance.label = style.name;
       }
       const variants = new Map();
-      variants.set("base", style.styleLess);
+      variants.set(
+        "base",
+        replaceAtImages(replaceAtVariables(style.styleLess), wfAssets)
+      );
       const wfVariants = style.variants ?? {};
       Object.keys(wfVariants).forEach((breakpointName) => {
         const variant = wfVariants[breakpointName as keyof typeof wfVariants];
         if (variant && "styleLess" in variant) {
-          variants.set(breakpointName, variant.styleLess);
+          variants.set(
+            breakpointName,
+            replaceAtImages(replaceAtVariables(variant.styleLess), wfAssets)
+          );
         }
       });
 

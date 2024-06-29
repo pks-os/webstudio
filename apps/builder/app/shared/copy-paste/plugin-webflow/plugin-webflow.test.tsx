@@ -17,6 +17,8 @@ import {
   $project,
   $registeredComponentMetas,
 } from "../../nano-states";
+import invariant from "tiny-invariant";
+import { WfData } from "./schema";
 
 const { toWebstudioFragment } = __testing__;
 
@@ -1556,6 +1558,55 @@ test("FormSelect", async () => {
   );
 });
 
+test("Multiline text", async () => {
+  const fragment = await toWebstudioFragment({
+    type: "@webflow/XscpData",
+    payload: {
+      nodes: [
+        {
+          _id: "da7b8e40-a038-735c-bde8-0016079a5502",
+          type: "Block",
+          tag: "div",
+          classes: [],
+          children: [
+            "629fa602-de2f-b70b-ba5e-a74de823cfff",
+            "b6a2a455-8ece-d70b-c88b-2f7b7dd39445",
+            "49a4d697-0430-6739-9179-e75c1dbec765",
+          ],
+        },
+        {
+          _id: "629fa602-de2f-b70b-ba5e-a74de823cfff",
+          text: true,
+          v: "a",
+        },
+        {
+          _id: "b6a2a455-8ece-d70b-c88b-2f7b7dd39445",
+          type: "LineBreak",
+          tag: "br",
+          classes: [],
+          children: [],
+        },
+        {
+          _id: "49a4d697-0430-6739-9179-e75c1dbec765",
+          text: true,
+          v: "b",
+        },
+      ],
+      styles: [],
+      assets: [],
+    },
+  });
+
+  equalFragment(
+    fragment,
+    <$.Box>
+      {"a"}
+      {"\n"}
+      {"b"}
+    </$.Box>
+  );
+});
+
 describe("Custom attributes", () => {
   test("Basic", async () => {
     const fragment = await toWebstudioFragment({
@@ -1967,4 +2018,153 @@ test("Breakpoints", async () => {
       }
     }"
   `);
+});
+
+test("background images", async () => {
+  const input = WfData.parse({
+    type: "@webflow/XscpData",
+    payload: {
+      nodes: [
+        {
+          _id: "2e9842a4-ac18-9d21-894b-026c6eb20441",
+          type: "Block",
+          tag: "div",
+          classes: ["98133834-439c-9a8c-7e9f-c3186f2fa45f"],
+          children: [],
+          data: {
+            text: false,
+          },
+        },
+      ],
+      styles: [
+        {
+          _id: "98133834-439c-9a8c-7e9f-c3186f2fa45f",
+          fake: false,
+          type: "class",
+          name: "Div Block",
+          namespace: "",
+          comb: "",
+          styleLess:
+            "height: 400px; background-image: linear-gradient(180deg, hsla(0, 0.00%, 0.00%, 0.11), white), @img_667d0b7769e0cc3754b584f6, @img_667d0fe180995eadc1534a26, @img_example_bg; background-position: 0px 0px, 550px 0px, 0px 0px,0px 0px; background-size: auto, contain, auto, auto; background-repeat: repeat, no-repeat, repeat,repeat; background-attachment: scroll, fixed, scroll, fixed;",
+          variants: {},
+          children: [],
+          createdBy: "5b7c48038bdf56493c54eae4",
+          origin: null,
+          selector: null,
+        },
+      ],
+      assets: [
+        {
+          cdnUrl:
+            "https://uploads-ssl.webflow.com/667c32290bd6159c18dca9a0/667d0b7769e0cc3754b584f6_IMG_2882%20(1).png",
+          siteId: "667c32290bd6159c18dca9a0",
+          width: 800,
+          height: 600,
+          fileName: "IMG_2882 (1).png",
+          createdOn: "2024-06-27T06:49:27.100Z",
+          origFileName: "IMG_2882 (1).png",
+          fileHash: "36f49907757795f0a4ecfcfdfc483115",
+          variants: [
+            {
+              origFileName: "IMG_2882%20(1)-p-500.png",
+              fileName: "667d0b7769e0cc3754b584f6_IMG_2882%20(1)-p-500.png",
+              format: "png",
+              size: 192728,
+              width: 500,
+              quality: 100,
+              cdnUrl:
+                "https://daks2k3a4ib2z.cloudfront.net/667c32290bd6159c18dca9a0/667d0b7769e0cc3754b584f6_IMG_2882%20(1)-p-500.png",
+              s3Url:
+                "https://s3.amazonaws.com/webflow-prod-assets/667c32290bd6159c18dca9a0/667d0b7769e0cc3754b584f6_IMG_2882%20(1)-p-500.png",
+            },
+          ],
+          mimeType: "image/png",
+          s3Url:
+            "https://s3.amazonaws.com/webflow-prod-assets/667c32290bd6159c18dca9a0/667d0b7769e0cc3754b584f6_IMG_2882%20(1).png",
+          thumbUrl: "",
+          _id: "667d0b7769e0cc3754b584f6",
+          markedAsDeleted: false,
+          fileSize: 862053,
+        },
+        {
+          cdnUrl:
+            "https://uploads-ssl.webflow.com/667c32290bd6159c18dca9a0/667d0fe180995eadc1534a26_%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80%20%3A%20%252F%20.webp",
+          siteId: "667c32290bd6159c18dca9a0",
+          width: 1024,
+          height: 1024,
+          fileName: "Привет Мир : %2F .webp",
+          createdOn: "2024-06-27T07:08:17.010Z",
+          origFileName: "Привет Мир : %2F .webp",
+          fileHash: "d86e52a94c04120f455b276effa59046",
+          variants: [
+            {
+              origFileName:
+                "%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80%20%3A%20%252F%20-p-500.webp",
+              fileName:
+                "667d0fe180995eadc1534a26_%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80%20%3A%20%252F%20-p-500.webp",
+              format: "webp",
+              size: 26992,
+              width: 500,
+              quality: 100,
+              cdnUrl:
+                "https://daks2k3a4ib2z.cloudfront.net/667c32290bd6159c18dca9a0/667d0fe180995eadc1534a26_%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80%20%3A%20%252F%20-p-500.webp",
+              s3Url:
+                "https://s3.amazonaws.com/webflow-prod-assets/667c32290bd6159c18dca9a0/667d0fe180995eadc1534a26_%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80%20%3A%20%252F%20-p-500.webp",
+            },
+            {
+              origFileName:
+                "%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80%20%3A%20%252F%20-p-800.webp",
+              fileName:
+                "667d0fe180995eadc1534a26_%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80%20%3A%20%252F%20-p-800.webp",
+              format: "webp",
+              size: 45964,
+              width: 800,
+              quality: 100,
+              cdnUrl:
+                "https://daks2k3a4ib2z.cloudfront.net/667c32290bd6159c18dca9a0/667d0fe180995eadc1534a26_%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80%20%3A%20%252F%20-p-800.webp",
+              s3Url:
+                "https://s3.amazonaws.com/webflow-prod-assets/667c32290bd6159c18dca9a0/667d0fe180995eadc1534a26_%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80%20%3A%20%252F%20-p-800.webp",
+            },
+          ],
+          mimeType: "image/webp",
+          s3Url:
+            "https://s3.amazonaws.com/webflow-prod-assets/667c32290bd6159c18dca9a0/667d0fe180995eadc1534a26_%D0%9F%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%9C%D0%B8%D1%80%20%3A%20%252F%20.webp",
+          thumbUrl: "",
+          _id: "667d0fe180995eadc1534a26",
+          markedAsDeleted: false,
+          fileSize: 191270,
+        },
+      ],
+    },
+  });
+
+  const fragment = await toWebstudioFragment(input);
+
+  const bgStyle = fragment.styles.find(
+    (style) => style.property === "backgroundImage"
+  );
+  //
+
+  expect(bgStyle).not.toBeNull();
+  expect(bgStyle?.value.type).toEqual("layers");
+
+  const layers = bgStyle?.value;
+
+  invariant(layers?.type === "layers");
+
+  const imgA = layers.value[1];
+  const imgB = layers.value[2];
+  const noneLayer = layers.value[3];
+
+  invariant(imgA.type === "image");
+  invariant(imgA.value.type === "url");
+  invariant(imgB.type === "image");
+  invariant(imgB.value.type === "url");
+
+  expect(imgA.value.url).toEqual(input.payload.assets[0].s3Url);
+  expect(imgB.value.url).toEqual(input.payload.assets[1].s3Url);
+
+  expect(noneLayer.type).toEqual("keyword");
+  invariant(noneLayer.type === "keyword");
+  expect(noneLayer.value).toEqual("none");
 });
