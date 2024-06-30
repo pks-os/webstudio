@@ -1,16 +1,9 @@
+import { camelCase } from "change-case";
 import * as csstree from "css-tree";
-import {
-  LayersValue,
-  StyleValue,
-  type StyleProperty,
-} from "@webstudio-is/css-engine";
+import { StyleValue, type StyleProperty } from "@webstudio-is/css-engine";
 import type { EmbedTemplateStyleDecl } from "@webstudio-is/react-sdk";
 import { parseCssValue as parseCssValueLonghand } from "./parse-css-value";
-import * as parsers from "./property-parsers/parsers";
-import * as toLonghand from "./property-parsers/to-longhand";
-import { camelCase } from "change-case";
 import { expandShorthands } from "./shorthands";
-import { parseBackground } from "./property-parsers";
 
 /**
  * Store prefixed properties without change
@@ -19,11 +12,16 @@ import { parseBackground } from "./property-parsers";
  */
 export const normalizePropertyName = (property: string) => {
   // these are manually added with pascal case
-  if (property === "-webkit-font-smoothing") {
+  // convert unprefixed used by webflow version into prefixed one
+  if (property === "-webkit-font-smoothing" || property === "font-smoothing") {
     return "WebkitFontSmoothing";
   }
   if (property === "-moz-osx-font-smoothing") {
     return "MozOsxFontSmoothing";
+  }
+  // webflow use unprefixed version
+  if (property === "tap-highlight-color") {
+    return "-webkit-tap-highlight-color";
   }
   if (property.startsWith("-")) {
     return property;
@@ -54,68 +52,32 @@ type Selector = string;
 
 export type Styles = Record<Selector, Array<EmbedTemplateStyleDecl>>;
 
-type Longhand = keyof typeof toLonghand;
-
 const parseCssValue = (
   property: string,
   value: string
 ): Map<StyleProperty, StyleValue> => {
-  const unwrap = toLonghand[property as Longhand];
-
-  if (typeof unwrap === "function") {
-    const longhands = unwrap(value);
-
-    return new Map(
-      Object.entries(longhands).map(([property, value]) => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore @todo remove this ignore: property is a `keyof typeof longhands` which is a key in parsers but TS can't infer the link
-        const valueParser = parsers[property];
-
-        if (typeof valueParser === "function") {
-          return [property, valueParser(value)];
-        }
-        if (Array.isArray(value)) {
-          return [
-            property,
-            {
-              type: "invalid",
-              value: value.join(""),
-            },
-          ];
-        }
-
-        if (value === undefined || value === "") {
-          return [property, { type: "invalid", value: "" }];
-        }
-
-        return [
-          property,
-          parseCssValueLonghand(property as StyleProperty, value),
-        ];
-      })
-    ) as Map<StyleProperty, StyleValue>;
-  }
-
   const expanded = new Map(expandShorthands([[property, value]]));
   const final = new Map();
   for (const [property, value] of expanded) {
-    const normalizedProperty = normalizePropertyName(property);
     if (value === "") {
       // Keep the browser behavior when property is defined with an empty value e.g. `color:;`
       // It may override some existing value and effectively set it to "unset";
-      final.set(normalizedProperty, { type: "keyword", value: "unset" });
+      final.set(property, { type: "keyword", value: "unset" });
       continue;
     }
 
     // @todo https://github.com/webstudio-is/webstudio/issues/3399
     if (value.startsWith("var(")) {
-      final.set(normalizedProperty, { type: "keyword", value: "unset" });
+      final.set(property, { type: "keyword", value: "unset" });
       continue;
     }
 
     final.set(
-      normalizedProperty,
-      parseCssValueLonghand(normalizedProperty as StyleProperty, value)
+      property,
+      parseCssValueLonghand(
+        normalizePropertyName(property) as StyleProperty,
+        value
+      )
     );
   }
   return final;
@@ -128,83 +90,6 @@ const cssTreeTryParse = (input: string) => {
   } catch {
     return;
   }
-};
-
-const convertBackgroundProps = (styles: EmbedTemplateStyleDecl[]) => {
-  const backgroundProps = [
-    "backgroundAttachment",
-    "backgroundClip",
-    "backgroundBlendMode",
-    "backgroundOrigin",
-    "backgroundPosition",
-    "backgroundRepeat",
-    "backgroundSize",
-  ];
-
-  return styles
-    .map((style) => {
-      if (backgroundProps.includes(style.property)) {
-        if (style.value.type !== "unparsed") {
-          const safeStyle = LayersValue.safeParse({
-            type: "layers",
-            value: [style.value],
-          });
-          if (safeStyle.success) {
-            return {
-              property: style.property,
-              value: safeStyle.data,
-            };
-          }
-          return style;
-        }
-
-        const layersResult = LayersValue.safeParse({
-          type: "layers",
-          value: style.value.value
-            .split(",")
-            .map((val) => parseCssValueLonghand(style.property, val)),
-        });
-
-        if (layersResult.success) {
-          return {
-            property: style.property,
-            value: layersResult.data,
-          };
-        }
-
-        console.error(
-          `Failed to convert background property ${
-            style.property
-          } with value ${JSON.stringify(style.value)} to layers`
-        );
-      }
-      return style;
-    })
-    .map((style) => {
-      if (style.property === "backgroundImage") {
-        if (style.value.type !== "unparsed") {
-          const safeStyle = LayersValue.safeParse({
-            type: "layers",
-            value: [style.value],
-          });
-          if (safeStyle.success) {
-            return {
-              property: style.property,
-              value: safeStyle.data,
-            };
-          }
-          return style;
-        }
-
-        const { backgroundImage } = parseBackground(style.value.value);
-
-        return {
-          property: style.property,
-          value: backgroundImage,
-        };
-      }
-      return style;
-    });
 };
 
 export const parseCss = (css: string) => {
@@ -294,11 +179,5 @@ export const parseCss = (css: string) => {
     }
   });
 
-  const stylesResult: Styles = {};
-
-  for (const [selector, declarations] of Object.entries(styles)) {
-    stylesResult[selector] = convertBackgroundProps(declarations);
-  }
-
-  return stylesResult;
+  return styles;
 };

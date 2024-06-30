@@ -36,6 +36,24 @@ export const properties = {
     },
     types: ["integer"],
   },
+  "-webkit-overflow-scrolling": {
+    unitGroups: [],
+    inherited: true,
+    initial: {
+      type: "keyword",
+      value: "auto",
+    },
+    types: [],
+  },
+  "-webkit-tap-highlight-color": {
+    unitGroups: [],
+    inherited: true,
+    initial: {
+      type: "keyword",
+      value: "black",
+    },
+    types: ["hex-color"],
+  },
   accentColor: {
     unitGroups: [],
     inherited: true,
@@ -237,23 +255,23 @@ export const properties = {
     },
     types: [],
   },
-  backgroundPosition: {
+  backgroundPositionX: {
     unitGroups: ["length", "percentage"],
     inherited: false,
     initial: {
-      type: "tuple",
-      value: [
-        {
-          type: "unit",
-          unit: "%",
-          value: 0,
-        },
-        {
-          type: "unit",
-          unit: "%",
-          value: 0,
-        },
-      ],
+      type: "unit",
+      unit: "%",
+      value: 0,
+    },
+    types: ["length", "percentage"],
+  },
+  backgroundPositionY: {
+    unitGroups: ["length", "percentage"],
+    inherited: false,
+    initial: {
+      type: "unit",
+      unit: "%",
+      value: 0,
     },
     types: ["length", "percentage"],
   },

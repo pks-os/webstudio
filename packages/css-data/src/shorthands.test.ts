@@ -1053,10 +1053,166 @@ test("expand text-wrap", () => {
   ]);
 });
 
+test("expand background-position", () => {
+  expect(expandShorthands([["background-position", "initial"]])).toEqual([
+    ["background-position-x", "initial"],
+    ["background-position-y", "initial"],
+  ]);
+  expect(expandShorthands([["background-position", "0"]])).toEqual([
+    ["background-position-x", "0"],
+    ["background-position-y", "center"],
+  ]);
+  expect(expandShorthands([["background-position", "top left"]])).toEqual([
+    ["background-position-x", "left"],
+    ["background-position-y", "top"],
+  ]);
+  expect(expandShorthands([["background-position", "right bottom"]])).toEqual([
+    ["background-position-x", "right"],
+    ["background-position-y", "bottom"],
+  ]);
+  expect(expandShorthands([["background-position", "25% 75%"]])).toEqual([
+    ["background-position-x", "25%"],
+    ["background-position-y", "75%"],
+  ]);
+  expect(
+    expandShorthands([["background-position", "bottom 10px right"]])
+  ).toEqual([
+    ["background-position-x", "right"],
+    ["background-position-y", "bottom 10px"],
+  ]);
+  expect(
+    expandShorthands([["background-position", "center right 10px"]])
+  ).toEqual([
+    ["background-position-x", "right 10px"],
+    ["background-position-y", "center"],
+  ]);
+  expect(
+    expandShorthands([["background-position", "center bottom 10px"]])
+  ).toEqual([
+    ["background-position-x", "center"],
+    ["background-position-y", "bottom 10px"],
+  ]);
+  expect(expandShorthands([["background-position", "top right 10px"]])).toEqual(
+    [
+      ["background-position-x", "right 10px"],
+      ["background-position-y", "top"],
+    ]
+  );
+  expect(
+    expandShorthands([["background-position", "bottom 10px right 20px"]])
+  ).toEqual([
+    ["background-position-x", "right 20px"],
+    ["background-position-y", "bottom 10px"],
+  ]);
+  expect(expandShorthands([["background-position", "0 10px, center"]])).toEqual(
+    [
+      ["background-position-x", "0,center"],
+      ["background-position-y", "10px,center"],
+    ]
+  );
+});
+
+test("expand background", () => {
+  expect(expandShorthands([["background", `none`]])).toEqual([
+    ["background-image", "none"],
+    ["background-position-x", "0%"],
+    ["background-position-y", "0%"],
+    ["background-size", "auto auto"],
+    ["background-repeat", "repeat"],
+    ["background-attachment", "scroll"],
+    ["background-origin", "padding-box"],
+    ["background-clip", "border-box"],
+    ["background-color", "transparent"],
+  ]);
+  expect(expandShorthands([["background", `green`]])).toEqual([
+    ["background-image", "none"],
+    ["background-position-x", "0%"],
+    ["background-position-y", "0%"],
+    ["background-size", "auto auto"],
+    ["background-repeat", "repeat"],
+    ["background-attachment", "scroll"],
+    ["background-origin", "padding-box"],
+    ["background-clip", "border-box"],
+    ["background-color", "green"],
+  ]);
+  expect(expandShorthands([["background", `transparent`]])).toEqual([
+    ["background-image", "none"],
+    ["background-position-x", "0%"],
+    ["background-position-y", "0%"],
+    ["background-size", "auto auto"],
+    ["background-repeat", "repeat"],
+    ["background-attachment", "scroll"],
+    ["background-origin", "padding-box"],
+    ["background-clip", "border-box"],
+    ["background-color", "transparent"],
+  ]);
+  expect(
+    expandShorthands([["background", `url("test.jpg") repeat-y`]])
+  ).toEqual([
+    ["background-image", "url(test.jpg)"],
+    ["background-position-x", "0%"],
+    ["background-position-y", "0%"],
+    ["background-size", "auto auto"],
+    ["background-repeat", "repeat-y"],
+    ["background-attachment", "scroll"],
+    ["background-origin", "padding-box"],
+    ["background-clip", "border-box"],
+    ["background-color", "transparent"],
+  ]);
+  expect(expandShorthands([["background", `border-box red`]])).toEqual([
+    ["background-image", "none"],
+    ["background-position-x", "0%"],
+    ["background-position-y", "0%"],
+    ["background-size", "auto auto"],
+    ["background-repeat", "repeat"],
+    ["background-attachment", "scroll"],
+    ["background-origin", "border-box"],
+    ["background-clip", "border-box"],
+    ["background-color", "red"],
+  ]);
+  expect(
+    expandShorthands([
+      ["background", `no-repeat center/80% url("../img/image.png")`],
+    ])
+  ).toEqual([
+    ["background-image", "url(../img/image.png)"],
+    ["background-position-x", "center"],
+    ["background-position-y", "center"],
+    ["background-size", "80%"],
+    ["background-repeat", "no-repeat"],
+    ["background-attachment", "scroll"],
+    ["background-origin", "padding-box"],
+    ["background-clip", "border-box"],
+    ["background-color", "transparent"],
+  ]);
+  expect(
+    expandShorthands([
+      [
+        "background",
+        `repeat scroll 0% 0% / auto padding-box border-box none transparent`,
+      ],
+    ])
+  ).toEqual([
+    ["background-image", "none"],
+    ["background-position-x", "0%"],
+    ["background-position-y", "0%"],
+    ["background-size", "auto"],
+    ["background-repeat", "repeat"],
+    ["background-attachment", "scroll"],
+    ["background-origin", "padding-box"],
+    ["background-clip", "border-box"],
+    ["background-color", "transparent"],
+  ]);
+});
+
 test.todo("all - can negatively affect build size");
-test.todo("background - not used in webflow");
-test.todo("background-position-x - we use shorthand");
-test.todo("background-position-y - we use shorthand");
-test.todo("translate - are these directly mappable to transform");
-test.todo("rotate");
-test.todo("scale");
+// https://developer.mozilla.org/en-US/docs/Web/CSS/animation-range
+test.todo("animation-range");
+// https://developer.mozilla.org/en-US/docs/Web/CSS/view-timeline
+test.todo("view-timeline");
+// https://www.w3.org/TR/css-anchor-position-1/#position-try-prop
+test.todo("position-try - not used in webflow");
+// https://www.w3.org/TR/css-ui-4/
+test.todo("caret - caret-color & caret-shape");
+// https://developer.mozilla.org/en-US/docs/Web/CSS/overscroll-behavior
+test.todo("overscroll-behavior");

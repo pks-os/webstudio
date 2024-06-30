@@ -1,9 +1,11 @@
 import { colord } from "colord";
 import * as csstree from "css-tree";
+import type { CssNode } from "css-tree";
 import warnOnce from "warn-once";
 import {
   TupleValue,
   hyphenateProperty,
+  type LayerValueItem,
   type StyleProperty,
   type StyleValue,
   type Unit,
@@ -24,6 +26,18 @@ export const cssTryParseValue = (input: string) => {
   } catch {
     return;
   }
+};
+
+const splitRepeated = (nodes: CssNode[]) => {
+  const lists: Array<CssNode[]> = [[]];
+  for (const node of nodes) {
+    if (node.type === "Operator" && node.value === ",") {
+      lists.push([]);
+    } else {
+      lists.at(-1)?.push(node);
+    }
+  }
+  return lists;
 };
 
 // Because csstree parser has bugs we use CSSStyleValue to validate css properties if available
@@ -76,9 +90,22 @@ export const isValidDeclaration = (
   return matchResult.matched != null;
 };
 
+const repeatedProps = new Set<StyleProperty>([
+  "backgroundAttachment",
+  "backgroundClip",
+  "backgroundBlendMode",
+  "backgroundOrigin",
+  "backgroundPositionX",
+  "backgroundPositionY",
+  "backgroundRepeat",
+  "backgroundSize",
+  "backgroundImage",
+]);
+
 export const parseCssValue = (
   property: StyleProperty, // Handles only long-hand values.
-  input: string
+  input: string,
+  topLevel = true
 ): StyleValue => {
   const invalidValue = {
     type: "invalid",
@@ -115,11 +142,26 @@ export const parseCssValue = (
     return parseTransitionLonghandProperty(property, input);
   }
 
-  if (
-    ast != null &&
-    ast.type === "Value" &&
-    ast.children.first === ast.children.last
-  ) {
+  // prevent infinite splitting into layers for items
+  if (repeatedProps.has(property) && topLevel) {
+    const nodes = "children" in ast ? ast.children?.toArray() ?? [] : [ast];
+    return {
+      type: "layers",
+      value: splitRepeated(nodes).map(
+        (nodes) =>
+          parseCssValue(
+            property,
+            csstree.generate({
+              type: "Value",
+              children: new csstree.List<CssNode>().fromArray(nodes),
+            }),
+            false
+          ) as LayerValueItem
+      ),
+    };
+  }
+
+  if (ast.type === "Value" && ast.children.first === ast.children.last) {
     // Try extract units from 1st children
     const first = ast.children.first;
 
@@ -177,6 +219,16 @@ export const parseCssValue = (
         };
       }
     }
+
+    if (first?.type === "Url") {
+      return {
+        type: "image",
+        value: {
+          type: "url",
+          url: first.value,
+        },
+      };
+    }
   }
 
   // Probably a color (we can use csstree.lexer.matchProperty(cssPropertyName, ast) to extract the type but this looks much simpler)
@@ -195,14 +247,16 @@ export const parseCssValue = (
   }
 
   // Probably a tuple like background-position
-  if (ast != null && ast.type === "Value" && ast.children.size === 2) {
+  if (ast.type === "Value" && ast.children.size === 2) {
     const tupleFirst = parseCssValue(
       property,
-      csstree.generate(ast.children.first!)
+      csstree.generate(ast.children.first!),
+      false
     );
     const tupleLast = parseCssValue(
       property,
-      csstree.generate(ast.children.last!)
+      csstree.generate(ast.children.last!),
+      false
     );
 
     const tupleResult = TupleValue.safeParse({

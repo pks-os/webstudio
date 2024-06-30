@@ -55,6 +55,144 @@ describe("Parse CSS", () => {
                   "type": "unparsed",
                   "value": "linear-gradient(180deg,#11181C 0%,rgba(17,24,28,0) 36.09%)",
                 },
+                {
+                  "type": "keyword",
+                  "value": "none",
+                },
+              ],
+            },
+          },
+          {
+            "property": "backgroundPositionX",
+            "value": {
+              "type": "layers",
+              "value": [
+                {
+                  "type": "unit",
+                  "unit": "%",
+                  "value": 0,
+                },
+                {
+                  "type": "unit",
+                  "unit": "%",
+                  "value": 0,
+                },
+              ],
+            },
+          },
+          {
+            "property": "backgroundPositionY",
+            "value": {
+              "type": "layers",
+              "value": [
+                {
+                  "type": "unit",
+                  "unit": "%",
+                  "value": 0,
+                },
+                {
+                  "type": "unit",
+                  "unit": "%",
+                  "value": 0,
+                },
+              ],
+            },
+          },
+          {
+            "property": "backgroundSize",
+            "value": {
+              "type": "layers",
+              "value": [
+                {
+                  "type": "tuple",
+                  "value": [
+                    {
+                      "type": "keyword",
+                      "value": "auto",
+                    },
+                    {
+                      "type": "keyword",
+                      "value": "auto",
+                    },
+                  ],
+                },
+                {
+                  "type": "tuple",
+                  "value": [
+                    {
+                      "type": "keyword",
+                      "value": "auto",
+                    },
+                    {
+                      "type": "keyword",
+                      "value": "auto",
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+          {
+            "property": "backgroundRepeat",
+            "value": {
+              "type": "layers",
+              "value": [
+                {
+                  "type": "keyword",
+                  "value": "repeat",
+                },
+                {
+                  "type": "keyword",
+                  "value": "repeat",
+                },
+              ],
+            },
+          },
+          {
+            "property": "backgroundAttachment",
+            "value": {
+              "type": "layers",
+              "value": [
+                {
+                  "type": "keyword",
+                  "value": "scroll",
+                },
+                {
+                  "type": "keyword",
+                  "value": "scroll",
+                },
+              ],
+            },
+          },
+          {
+            "property": "backgroundOrigin",
+            "value": {
+              "type": "layers",
+              "value": [
+                {
+                  "type": "keyword",
+                  "value": "padding-box",
+                },
+                {
+                  "type": "keyword",
+                  "value": "padding-box",
+                },
+              ],
+            },
+          },
+          {
+            "property": "backgroundClip",
+            "value": {
+              "type": "layers",
+              "value": [
+                {
+                  "type": "keyword",
+                  "value": "border-box",
+                },
+                {
+                  "type": "keyword",
+                  "value": "border-box",
+                },
               ],
             },
           },
@@ -71,194 +209,6 @@ describe("Parse CSS", () => {
         ],
       }
     `);
-  });
-
-  test("parses supported shorthand values 2", () => {
-    const css = `
-      .test {
-          background-image: linear-gradient(180deg, hsla(0, 0.00%, 0.00%, 0.11), white), url("https://667d0b7769e0cc3754b584f6"), none, url("https://667d0fe180995eadc1534a26");
-          background-position: 0px 0px, 550px 0px, 0px 0px, 0px 0px;
-          background-size: auto, contain, auto, auto;
-          background-repeat: repeat, no-repeat, repeat, repeat;
-          background-attachment: scroll, fixed, scroll, scroll;
-      }
-    `;
-    expect(parseCss(css)).toMatchInlineSnapshot(`
-{
-  "test": [
-    {
-      "property": "backgroundImage",
-      "value": {
-        "type": "layers",
-        "value": [
-          {
-            "type": "unparsed",
-            "value": "linear-gradient(180deg,hsla(0,0.00%,0.00%,0.11),white)",
-          },
-          {
-            "type": "image",
-            "value": {
-              "type": "url",
-              "url": "https://667d0b7769e0cc3754b584f6",
-            },
-          },
-          {
-            "type": "keyword",
-            "value": "none",
-          },
-          {
-            "type": "image",
-            "value": {
-              "type": "url",
-              "url": "https://667d0fe180995eadc1534a26",
-            },
-          },
-        ],
-      },
-    },
-    {
-      "property": "backgroundPosition",
-      "value": {
-        "type": "layers",
-        "value": [
-          {
-            "type": "tuple",
-            "value": [
-              {
-                "type": "unit",
-                "unit": "px",
-                "value": 0,
-              },
-              {
-                "type": "unit",
-                "unit": "px",
-                "value": 0,
-              },
-            ],
-          },
-          {
-            "type": "tuple",
-            "value": [
-              {
-                "type": "unit",
-                "unit": "px",
-                "value": 550,
-              },
-              {
-                "type": "unit",
-                "unit": "px",
-                "value": 0,
-              },
-            ],
-          },
-          {
-            "type": "tuple",
-            "value": [
-              {
-                "type": "unit",
-                "unit": "px",
-                "value": 0,
-              },
-              {
-                "type": "unit",
-                "unit": "px",
-                "value": 0,
-              },
-            ],
-          },
-          {
-            "type": "tuple",
-            "value": [
-              {
-                "type": "unit",
-                "unit": "px",
-                "value": 0,
-              },
-              {
-                "type": "unit",
-                "unit": "px",
-                "value": 0,
-              },
-            ],
-          },
-        ],
-      },
-    },
-    {
-      "property": "backgroundSize",
-      "value": {
-        "type": "layers",
-        "value": [
-          {
-            "type": "keyword",
-            "value": "auto",
-          },
-          {
-            "type": "keyword",
-            "value": "contain",
-          },
-          {
-            "type": "keyword",
-            "value": "auto",
-          },
-          {
-            "type": "keyword",
-            "value": "auto",
-          },
-        ],
-      },
-    },
-    {
-      "property": "backgroundRepeat",
-      "value": {
-        "type": "layers",
-        "value": [
-          {
-            "type": "keyword",
-            "value": "repeat",
-          },
-          {
-            "type": "keyword",
-            "value": "no-repeat",
-          },
-          {
-            "type": "keyword",
-            "value": "repeat",
-          },
-          {
-            "type": "keyword",
-            "value": "repeat",
-          },
-        ],
-      },
-    },
-    {
-      "property": "backgroundAttachment",
-      "value": {
-        "type": "layers",
-        "value": [
-          {
-            "type": "keyword",
-            "value": "scroll",
-          },
-          {
-            "type": "keyword",
-            "value": "fixed",
-          },
-          {
-            "type": "keyword",
-            "value": "scroll",
-          },
-          {
-            "type": "keyword",
-            "value": "scroll",
-          },
-        ],
-      },
-    },
-  ],
-}
-`);
   });
 
   test("parses single layer", () => {
@@ -283,24 +233,27 @@ describe("Parse CSS", () => {
       },
     },
     {
-      "property": "backgroundPosition",
+      "property": "backgroundPositionX",
       "value": {
         "type": "layers",
         "value": [
           {
-            "type": "tuple",
-            "value": [
-              {
-                "type": "unit",
-                "unit": "px",
-                "value": 0,
-              },
-              {
-                "type": "unit",
-                "unit": "px",
-                "value": 0,
-              },
-            ],
+            "type": "unit",
+            "unit": "px",
+            "value": 0,
+          },
+        ],
+      },
+    },
+    {
+      "property": "backgroundPositionY",
+      "value": {
+        "type": "layers",
+        "value": [
+          {
+            "type": "unit",
+            "unit": "px",
+            "value": 0,
           },
         ],
       },
@@ -675,18 +628,18 @@ describe("Parse CSS", () => {
     // @todo parser is wrong here, it should be keyword horizontal
     expect(parseCss(`a { -webkit-box-orient: horizontal; }`))
       .toMatchInlineSnapshot(`
-{
-  "a": [
-    {
-      "property": "-webkit-box-orient",
-      "value": {
-        "type": "keyword",
-        "value": "horizontal",
-      },
-    },
-  ],
-}
-`);
+        {
+          "a": [
+            {
+              "property": "-webkit-box-orient",
+              "value": {
+                "type": "keyword",
+                "value": "horizontal",
+              },
+            },
+          ],
+        }
+      `);
   });
 
   test("parse child combinator", () => {
@@ -695,5 +648,66 @@ describe("Parse CSS", () => {
 
   test("parse space combinator", () => {
     expect(parseCss(`a b { color: #ff0000 }`)).toMatchInlineSnapshot(`{}`);
+  });
+});
+
+test("parse font-smooth properties", () => {
+  expect(
+    parseCss(`
+      a {
+        font-smoothing: auto;
+      }
+      b {
+        -webkit-font-smoothing: auto;
+      }
+      c {
+        -moz-osx-font-smoothing: auto;
+      }
+   `)
+  ).toEqual({
+    a: [
+      {
+        property: "WebkitFontSmoothing",
+        value: { type: "keyword", value: "auto" },
+      },
+    ],
+    b: [
+      {
+        property: "WebkitFontSmoothing",
+        value: { type: "keyword", value: "auto" },
+      },
+    ],
+    c: [
+      {
+        property: "MozOsxFontSmoothing",
+        value: { type: "keyword", value: "auto" },
+      },
+    ],
+  });
+});
+
+test("parse incorrectly unprefixed tap-highlight-color", () => {
+  expect(
+    parseCss(`
+      a {
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+      }
+      b {
+        tap-highlight-color: transparent;
+      }
+   `)
+  ).toEqual({
+    a: [
+      {
+        property: "-webkit-tap-highlight-color",
+        value: { alpha: 0, b: 0, g: 0, r: 0, type: "rgb" },
+      },
+    ],
+    b: [
+      {
+        property: "-webkit-tap-highlight-color",
+        value: { type: "keyword", value: "transparent" },
+      },
+    ],
   });
 });
