@@ -921,8 +921,8 @@ export const styles = {
     {
       property: "all",
       value: {
-        type: "invalid",
-        value: "",
+        type: "keyword",
+        value: "inherit",
       },
     },
   ],
@@ -3358,8 +3358,13 @@ export const styles = {
     {
       property: "transitionBehavior",
       value: {
-        type: "invalid",
-        value: "normal",
+        type: "layers",
+        value: [
+          {
+            type: "keyword",
+            value: "normal",
+          },
+        ],
       },
     },
     {
@@ -8858,8 +8863,17 @@ export const styles = {
     {
       property: "transitionBehavior",
       value: {
-        type: "invalid",
-        value: "normal,normal",
+        type: "layers",
+        value: [
+          {
+            type: "keyword",
+            value: "normal",
+          },
+          {
+            type: "keyword",
+            value: "normal",
+          },
+        ],
       },
     },
     {
@@ -11240,8 +11254,13 @@ export const styles = {
     {
       property: "transitionBehavior",
       value: {
-        type: "invalid",
-        value: "normal",
+        type: "layers",
+        value: [
+          {
+            type: "keyword",
+            value: "normal",
+          },
+        ],
       },
     },
     {
