@@ -918,13 +918,6 @@ export const styles = {
         value: 1,
       },
     },
-    {
-      property: "all",
-      value: {
-        type: "keyword",
-        value: "inherit",
-      },
-    },
   ],
   code: [
     {
@@ -989,28 +982,28 @@ export const styles = {
       property: "fontStyle",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontVariantCaps",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontWeight",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontStretch",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
@@ -1024,14 +1017,14 @@ export const styles = {
       property: "lineHeight",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontFamily",
       value: {
         type: "keyword",
-        value: "unset",
+        value: "inherit",
       },
     },
     {
@@ -1338,28 +1331,28 @@ export const styles = {
       property: "fontStyle",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontVariantCaps",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontWeight",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontStretch",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
@@ -1373,7 +1366,7 @@ export const styles = {
       property: "fontFamily",
       value: {
         type: "keyword",
-        value: "unset",
+        value: "inherit",
       },
     },
     {
@@ -1576,21 +1569,21 @@ export const styles = {
       property: "fontStyle",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontVariantCaps",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontStretch",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
@@ -1604,14 +1597,14 @@ export const styles = {
       property: "lineHeight",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontFamily",
       value: {
         type: "keyword",
-        value: "unset",
+        value: "inherit",
       },
     },
     {
@@ -1666,28 +1659,28 @@ export const styles = {
       property: "fontStyle",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontVariantCaps",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontWeight",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontStretch",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
@@ -1701,14 +1694,14 @@ export const styles = {
       property: "lineHeight",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontFamily",
       value: {
         type: "keyword",
-        value: "unset",
+        value: "inherit",
       },
     },
     {
@@ -1763,28 +1756,28 @@ export const styles = {
       property: "fontStyle",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontVariantCaps",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontWeight",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontStretch",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
@@ -1798,14 +1791,14 @@ export const styles = {
       property: "lineHeight",
       value: {
         type: "keyword",
-        value: "initial",
+        value: "inherit",
       },
     },
     {
       property: "fontFamily",
       value: {
         type: "keyword",
-        value: "unset",
+        value: "inherit",
       },
     },
     {
@@ -2940,49 +2933,49 @@ export const styles = {
       property: "fontVariantLigatures",
       value: {
         type: "keyword",
-        value: "normal",
+        value: "inherit",
       },
     },
     {
       property: "fontVariantCaps",
       value: {
         type: "keyword",
-        value: "normal",
+        value: "inherit",
       },
     },
     {
       property: "fontVariantAlternates",
       value: {
         type: "keyword",
-        value: "normal",
+        value: "inherit",
       },
     },
     {
       property: "fontVariantNumeric",
       value: {
         type: "keyword",
-        value: "normal",
+        value: "inherit",
       },
     },
     {
       property: "fontVariantEastAsian",
       value: {
         type: "keyword",
-        value: "normal",
+        value: "inherit",
       },
     },
     {
       property: "fontVariantPosition",
       value: {
         type: "keyword",
-        value: "normal",
+        value: "inherit",
       },
     },
     {
       property: "fontVariantEmoji",
       value: {
-        type: "invalid",
-        value: "normal",
+        type: "keyword",
+        value: "inherit",
       },
     },
     {
@@ -12017,21 +12010,21 @@ export const styles = {
     {
       property: "animationTimeline",
       value: {
-        type: "invalid",
-        value: "",
+        type: "unparsed",
+        value: "auto",
       },
     },
     {
       property: "animationRangeStart",
       value: {
-        type: "invalid",
+        type: "unparsed",
         value: "normal",
       },
     },
     {
       property: "animationRangeEnd",
       value: {
-        type: "invalid",
+        type: "unparsed",
         value: "normal",
       },
     },
@@ -12411,14 +12404,14 @@ export const styles = {
       property: "whiteSpaceCollapse",
       value: {
         type: "keyword",
-        value: "collapse",
+        value: "initial",
       },
     },
     {
       property: "textWrapMode",
       value: {
         type: "keyword",
-        value: "wrap",
+        value: "initial",
       },
     },
   ],
