@@ -685,6 +685,7 @@ test("QuickStack with instance styles", async () => {
                   noPseudo: {
                     gridTemplateColumns: "1fr 1fr",
                     gridTemplateRows: "auto",
+                    order: 1,
                   },
                 },
               },
@@ -731,7 +732,8 @@ test("QuickStack with instance styles", async () => {
       }
       Local {
         grid-template-columns: 1fr 1fr;
-        grid-template-rows: auto
+        grid-template-rows: auto;
+        order: 1
       }
       w-layout-cell {
         flex-direction: column;
@@ -2596,7 +2598,6 @@ describe("Styles", () => {
             name: "is-small",
             comb: "&",
             styleLess: "",
-            createdBy: "6075409192d886a671499223",
           },
           {
             _id: "194e7d07-469d-6ffa-3925-1f51bdad7e46",
@@ -2604,7 +2605,6 @@ describe("Styles", () => {
             name: "is-secondary",
             comb: "&",
             styleLess: "background-color: transparent;",
-            createdBy: "6075409192d886a671499223",
           },
         ],
         assets: [],
@@ -2614,12 +2614,12 @@ describe("Styles", () => {
     expect(fragment.styleSources).toEqual([
       {
         type: "token",
-        id: expect.any(String),
+        id: "uu1p3Xdvlq_AZOxnzDvAv",
         name: "a",
       },
       {
         type: "token",
-        id: expect.any(String),
+        id: "uumXb7vHOnzTr-4SIW-wJ",
         name: "button.is-small.is-secondary",
       },
     ]);
@@ -2628,8 +2628,8 @@ describe("Styles", () => {
         instanceId: expect.any(String),
         values: [
           "uu1p3Xdvlq_AZOxnzDvAv",
-          "uumXb7vHOnzTr-4SIW-wJ",
           "uuBw1PRC_uE8RhTmwxaH8",
+          "uumXb7vHOnzTr-4SIW-wJ",
           "uuORexg4BOrRXBJZgB80_",
         ],
       },
@@ -2913,9 +2913,6 @@ describe("Styles", () => {
               "height: 400px; background-image: linear-gradient(180deg, hsla(0, 0.00%, 0.00%, 0.11), white), @img_667d0b7769e0cc3754b584f6, @img_667d0fe180995eadc1534a26, @img_example_bg; background-position: 0px 0px, 550px 0px, 0px 0px,0px 0px; background-size: auto, contain, auto, auto; background-repeat: repeat, no-repeat, repeat,repeat; background-attachment: scroll, fixed, scroll, fixed;",
             variants: {},
             children: [],
-            createdBy: "5b7c48038bdf56493c54eae4",
-            origin: null,
-            selector: null,
           },
         ],
         assets: [
@@ -3071,7 +3068,64 @@ describe("Styles", () => {
             styleLess: "color: @raw<|black|>; background-color: @raw<|red|>;",
             variants: {},
             children: [],
-            createdBy: "635e72dd77408d16b581b4bc",
+          },
+        ],
+        assets: [],
+      },
+    });
+
+    const fragment = await toWebstudioFragment(input);
+
+    expect(toCss(fragment)).toMatchInlineSnapshot(`
+      "@media all {
+        Div Block {
+          color: black;
+          background-color: red
+        }
+      }"
+    `);
+  });
+
+  test("append transparent color when background-clip is used", async () => {
+    const input = WfData.parse({
+      type: "@webflow/XscpData",
+      payload: {
+        nodes: [
+          {
+            _id: "15c3fb65-b871-abe4-f9a4-3747c8a882e0",
+            type: "Heading",
+            tag: "h2",
+            classes: ["069649be-a33a-1a9a-3763-c0bd9d1f3a3d"],
+            children: ["b69a5869-f046-5a0c-151e-9b134a6852aa"],
+            data: {
+              tag: "h2",
+              devlink: { runtimeProps: {}, slot: "" },
+              displayName: "",
+              attr: { id: "" },
+              xattr: [],
+              search: { exclude: false },
+              visibility: { conditions: [] },
+            },
+          },
+          {
+            _id: "b69a5869-f046-5a0c-151e-9b134a6852aa",
+            text: true,
+            v: "Protect your systems securely with Prism",
+          },
+        ],
+        styles: [
+          {
+            _id: "069649be-a33a-1a9a-3763-c0bd9d1f3a3d",
+            fake: false,
+            type: "class",
+            name: "H2 Heading 2",
+            namespace: "",
+            comb: "",
+            styleLess:
+              "background-image: linear-gradient(350deg, hsla(256.3636363636363, 72.13%, 23.92%, 0.00), hsla(256.2162162162162, 72.55%, 80.00%, 1.00) 49%, #bba7f1); color: hsla(0, 0.00%, 100.00%, 1.00); background-clip: text;",
+            variants: {},
+            children: [],
+            createdBy: "58b4b8186ceb395341fcf640",
             origin: null,
             selector: null,
           },
@@ -3083,12 +3137,21 @@ describe("Styles", () => {
     const fragment = await toWebstudioFragment(input);
 
     expect(toCss(fragment)).toMatchInlineSnapshot(`
-"@media all {
-  Div Block {
-    color: black;
-    background-color: red
-  }
-}"
-`);
+      "@media all {
+        h2 {
+          margin-bottom: 10px;
+          font-weight: bold;
+          margin-top: 20px;
+          font-size: 32px;
+          line-height: 36px
+        }
+        H2 Heading 2 {
+          background-image: linear-gradient(350deg,hsla(256.3636363636363,72.13%,23.92%,0.00),hsla(256.2162162162162,72.55%,80.00%,1.00) 49%,#bba7f1);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent
+        }
+      }"
+    `);
   });
 });
