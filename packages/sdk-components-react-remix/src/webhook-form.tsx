@@ -6,8 +6,7 @@ import {
   useEffect,
 } from "react";
 import { useFetcher, type Fetcher, type FormProps } from "@remix-run/react";
-import { formIdFieldName } from "@webstudio-is/form-handlers";
-import { formBotFieldName } from "../../form-handlers/src/shared";
+import { formIdFieldName, formBotFieldName } from "@webstudio-is/sdk";
 
 export const defaultTag = "form";
 
@@ -120,7 +119,11 @@ export const WebhookForm = forwardRef<
         ref={ref}
         onSubmit={handleSubmitAndAddHiddenJsField}
       >
-        <input type="hidden" name={formIdFieldName} value={action} />
+        <input
+          type="hidden"
+          name={formIdFieldName}
+          value={action?.toString()}
+        />
         {children}
       </fetcher.Form>
     );
