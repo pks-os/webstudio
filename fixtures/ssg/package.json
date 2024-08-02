@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "build": "vite build",
-    "postbuild": "prettier --write .",
+    "postbuild": "prettier --write . || true",
     "dev": "vite dev",
     "typecheck": "tsc",
     "cli": "NODE_OPTIONS='--conditions=webstudio --import=tsx' webstudio",
@@ -34,7 +34,6 @@
     "@webstudio-is/react-sdk": "workspace:*",
     "@webstudio-is/sdk-components-react-radix": "workspace:*",
     "@webstudio-is/sdk-components-react": "workspace:*",
-    "@webstudio-is/form-handlers": "workspace:*",
     "@webstudio-is/image": "workspace:*",
     "@webstudio-is/sdk": "workspace:*",
     "react": "18.3.0-canary-14898b6a9-20240318",
