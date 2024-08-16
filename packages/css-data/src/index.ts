@@ -1,8 +1,6 @@
 import type { WritableDeep } from "type-fest";
-import type { Html } from "./html";
-import * as exportedHtml from "./html";
-export const html: Html = exportedHtml;
 
+export { html } from "./__generated__/html";
 export * from "./__generated__/keyword-values";
 export * from "./__generated__/units";
 export {
