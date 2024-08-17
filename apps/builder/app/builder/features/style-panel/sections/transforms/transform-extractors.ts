@@ -2,6 +2,7 @@ import type {
   FunctionValue,
   KeywordValue,
   StyleValue,
+  TupleValue,
   UnitValue,
 } from "@webstudio-is/css-engine";
 
@@ -58,17 +59,22 @@ const isValidTransformOriginValue = (
   return value.type === "unit" || value.type === "keyword";
 };
 
-export const extractTransformOriginValues = (value: StyleValue) => {
-  if (value.type !== "tuple") {
-    return;
-  }
-
+// https://developer.mozilla.org/en-US/docs/Web/CSS/perspective-origin#syntax
+// https://developer.mozilla.org/en-US/docs/Web/CSS/transform-origin#syntax
+// Both transform and perspective origin shares the same syntax for their values.
+// The only difference is `transform-origin` can have a 3rd value for z-axis.
+export const extractTransformOrPerspectiveOriginValues = (
+  value: TupleValue
+): {
+  x: KeywordValue | UnitValue;
+  y: KeywordValue | UnitValue;
+  z?: UnitValue;
+} => {
   let x: KeywordValue | UnitValue = { type: "keyword", value: "center" };
   let y: KeywordValue | UnitValue = { type: "keyword", value: "center" };
-  let z: UnitValue = { type: "unit", unit: "px", value: 0 };
+  let z: UnitValue | undefined;
 
   // https://www.w3.org/TR/css-transforms-1/#transform-origin-property
-  // https://github.com/mdn/content/issues/35411
   // If only one value is specified, the second value is assumed to be center.
   if (value.value.length === 1 && value.value[0].type === "unit") {
     x = value.value[0];
@@ -84,24 +90,54 @@ export const extractTransformOriginValues = (value: StyleValue) => {
     }
   }
 
-  if (
-    value.value.length === 2 &&
-    isValidTransformOriginValue(value.value[0]) &&
-    isValidTransformOriginValue(value.value[1])
-  ) {
-    x = value.value[0];
-    y = value.value[1];
+  // If keywords are used for x and y axises, their values can be swapped
+  // and they are still valid. So, we are making sure that x is left or right
+  // and y is top or bottom by checking their values.
+
+  if (value.value.length === 2) {
+    const [first, second] = value.value;
+    if (
+      isValidTransformOriginValue(first) === true &&
+      isValidTransformOriginValue(second) === true
+    ) {
+      x = first;
+      y = second;
+
+      if (first.type === "keyword" && ["left", "right"].includes(first.value)) {
+        x = first;
+        y = second;
+      } else if (
+        first.type === "keyword" &&
+        ["top", "bottom"].includes(first.value)
+      ) {
+        y = first;
+        x = second;
+      }
+    }
   }
 
-  if (
-    value.value.length === 3 &&
-    isValidTransformOriginValue(value.value[0]) &&
-    isValidTransformOriginValue(value.value[1]) &&
-    value.value[2].type === "unit"
-  ) {
-    x = value.value[0];
-    y = value.value[1];
-    z = value.value[2];
+  if (value.value.length === 3) {
+    const [first, second, third] = value.value;
+    if (
+      isValidTransformOriginValue(first) === true &&
+      isValidTransformOriginValue(second) === true &&
+      third.type === "unit"
+    ) {
+      x = first;
+      y = second;
+      z = third;
+
+      if (first.type === "keyword" && ["left", "right"].includes(first.value)) {
+        x = first;
+        y = second;
+      } else if (
+        first.type === "keyword" &&
+        ["top", "bottom"].includes(first.value)
+      ) {
+        y = first;
+        x = second;
+      }
+    }
   }
 
   return {

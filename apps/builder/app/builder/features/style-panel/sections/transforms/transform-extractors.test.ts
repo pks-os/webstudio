@@ -2,9 +2,10 @@ import { describe, test, expect } from "@jest/globals";
 import {
   extractRotatePropertiesFromTransform,
   extractSkewPropertiesFromTransform,
-  extractTransformOriginValues,
+  extractTransformOrPerspectiveOriginValues,
 } from "./transform-extractors";
 import { parseCssValue } from "@webstudio-is/css-data";
+import type { TupleValue } from "@webstudio-is/css-engine";
 
 describe("extractRotatePropertiesFromTransform", () => {
   test("parses transform and returns undefined if no rotate values exists", () => {
@@ -107,53 +108,61 @@ describe("extractSkewPropertiesFromTransform", () => {
   });
 });
 
-describe("extractTransformOriginValues", () => {
+describe("extractTransformOrPerspectiveOriginValues", () => {
   test("parses transform-origin and returns the individual properties from the value", () => {
     expect(
-      extractTransformOriginValues(parseCssValue("transformOrigin", "center"))
+      extractTransformOrPerspectiveOriginValues(
+        parseCssValue("transformOrigin", "center") as TupleValue
+      )
     ).toEqual({
       x: { type: "keyword", value: "center" },
       y: { type: "keyword", value: "center" },
-      z: { type: "unit", unit: "px", value: 0 },
+      z: undefined,
     });
 
     expect(
-      extractTransformOriginValues(parseCssValue("transformOrigin", "top"))
+      extractTransformOrPerspectiveOriginValues(
+        parseCssValue("transformOrigin", "top") as TupleValue
+      )
     ).toEqual({
       x: { type: "keyword", value: "center" },
       y: { type: "keyword", value: "top" },
-      z: { type: "unit", unit: "px", value: 0 },
+      z: undefined,
     });
 
     expect(
-      extractTransformOriginValues(parseCssValue("transformOrigin", "right"))
+      extractTransformOrPerspectiveOriginValues(
+        parseCssValue("transformOrigin", "right") as TupleValue
+      )
     ).toEqual({
       x: { type: "keyword", value: "right" },
       y: { type: "keyword", value: "center" },
-      z: { type: "unit", unit: "px", value: 0 },
+      z: undefined,
     });
 
     expect(
-      extractTransformOriginValues(parseCssValue("transformOrigin", "45px"))
+      extractTransformOrPerspectiveOriginValues(
+        parseCssValue("transformOrigin", "45px") as TupleValue
+      )
     ).toEqual({
       x: { type: "unit", unit: "px", value: 45 },
       y: { type: "keyword", value: "center" },
-      z: { type: "unit", unit: "px", value: 0 },
+      z: undefined,
     });
 
     expect(
-      extractTransformOriginValues(
-        parseCssValue("transformOrigin", "20px 40px")
+      extractTransformOrPerspectiveOriginValues(
+        parseCssValue("transformOrigin", "20px 40px") as TupleValue
       )
     ).toEqual({
       x: { type: "unit", unit: "px", value: 20 },
       y: { type: "unit", unit: "px", value: 40 },
-      z: { type: "unit", unit: "px", value: 0 },
+      z: undefined,
     });
 
     expect(
-      extractTransformOriginValues(
-        parseCssValue("transformOrigin", "10px 20px 30px")
+      extractTransformOrPerspectiveOriginValues(
+        parseCssValue("transformOrigin", "10px 20px 30px") as TupleValue
       )
     ).toEqual({
       x: { type: "unit", unit: "px", value: 10 },
@@ -162,13 +171,43 @@ describe("extractTransformOriginValues", () => {
     });
 
     expect(
-      extractTransformOriginValues(
-        parseCssValue("transformOrigin", "left top 30px")
+      extractTransformOrPerspectiveOriginValues(
+        parseCssValue("transformOrigin", "left top 30px") as TupleValue
       )
     ).toEqual({
       x: { type: "keyword", value: "left" },
       y: { type: "keyword", value: "top" },
-      z: { type: "unit", unit: "px", value: 30 },
+      z: { type: "unit", value: 30, unit: "px" },
+    });
+
+    expect(
+      extractTransformOrPerspectiveOriginValues(
+        parseCssValue("transformOrigin", "bottom right 60px") as TupleValue
+      )
+    ).toEqual({
+      x: { type: "keyword", value: "right" },
+      y: { type: "keyword", value: "bottom" },
+      z: { type: "unit", value: 60, unit: "px" },
+    });
+
+    expect(
+      extractTransformOrPerspectiveOriginValues(
+        parseCssValue("transformOrigin", "left 50% 60px") as TupleValue
+      )
+    ).toEqual({
+      x: { type: "keyword", value: "left" },
+      y: { type: "unit", value: 50, unit: "%" },
+      z: { type: "unit", value: 60, unit: "px" },
+    });
+
+    expect(
+      extractTransformOrPerspectiveOriginValues(
+        parseCssValue("transformOrigin", "50% bottom 60px") as TupleValue
+      )
+    ).toEqual({
+      x: { type: "unit", value: 50, unit: "%" },
+      y: { type: "keyword", value: "bottom" },
+      z: { type: "unit", value: 60, unit: "px" },
     });
   });
 });

@@ -39,11 +39,13 @@ import { ScalePanelContent } from "./transform-scale";
 import { RotatePanelContent } from "./transform-rotate";
 import { SkewPanelContent } from "./transform-skew";
 import { BackfaceVisibility } from "./transform-backface-visibility";
+import { TransformPerspective } from "./transform-perspective";
 import { humanizeString } from "~/shared/string-utils";
 import { getStyleSource } from "../../shared/style-info";
 import { PropertyName } from "../../shared/property-name";
 import { getDots } from "../../shared/collapsible-section";
 import { isFeatureEnabled } from "@webstudio-is/feature-flags";
+import { TransformOrigin } from "./transform-origin";
 
 export const transformPanels = [
   "translate",
@@ -55,6 +57,8 @@ export const transformPanels = [
 export const transformPanelDropdown = [
   ...transformPanels,
   "backfaceVisibility",
+  "transformOrigin",
+  "perspective",
 ] as const;
 
 export type TransformPanel = (typeof transformPanels)[number];
@@ -64,7 +68,9 @@ export const properties = [
   "translate",
   "scale",
   "transform",
+  "transformOrigin",
   "backfaceVisibility",
+  "perspective",
 ] satisfies Array<StyleProperty>;
 
 export const Section = (props: SectionProps) => {
@@ -81,6 +87,7 @@ export const Section = (props: SectionProps) => {
   const backfaceVisibilityStyleSource = getStyleSource(
     currentStyle["backfaceVisibility"]
   );
+  const perspectiveStyleSource = getStyleSource(currentStyle["perspective"]);
 
   const isAnyTransformPropertyAdded = transformPanels.some((panel) =>
     isTransformPanelPropertyUsed({
@@ -94,7 +101,9 @@ export const Section = (props: SectionProps) => {
     batch.deleteProperty("translate");
     batch.deleteProperty("scale");
     batch.deleteProperty("transform");
+    batch.deleteProperty("transformOrigin");
     batch.deleteProperty("backfaceVisibility");
+    batch.deleteProperty("perspective");
     batch.publish();
   };
 
@@ -115,7 +124,7 @@ export const Section = (props: SectionProps) => {
               <DropdownMenuPortal>
                 <DropdownMenuContent
                   collisionPadding={16}
-                  css={{ width: theme.spacing[20] }}
+                  css={{ width: theme.spacing[24] }}
                 >
                   {transformPanelDropdown.map((panel) => {
                     return (
@@ -155,7 +164,8 @@ export const Section = (props: SectionProps) => {
                   translateStyleSource ||
                   scaleStyleSource ||
                   rotateAndSkewStyleSrouce ||
-                  backfaceVisibilityStyleSource
+                  backfaceVisibilityStyleSource ||
+                  perspectiveStyleSource
                 }
               >
                 {label}
@@ -182,6 +192,8 @@ export const Section = (props: SectionProps) => {
       ) : undefined}
 
       <BackfaceVisibility {...props} />
+      <TransformOrigin {...props} />
+      <TransformPerspective {...props} />
     </CollapsibleSectionRoot>
   );
 };
