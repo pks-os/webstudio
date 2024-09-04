@@ -41,7 +41,6 @@ import { BackfaceVisibility } from "./transform-backface-visibility";
 import { TransformPerspective } from "./transform-perspective";
 import { humanizeString } from "~/shared/string-utils";
 import { getDots } from "../../shared/collapsible-section";
-import { isFeatureEnabled } from "@webstudio-is/feature-flags";
 import { TransformAndPerspectiveOrigin } from "./transform-and-perspective-origin";
 import { PropertySectionLabel } from "../../property-label";
 import { propertyDescriptions } from "@webstudio-is/css-data";
@@ -77,10 +76,6 @@ export const properties = [
 export const Section = (props: SectionProps) => {
   const [isOpen, setIsOpen] = useState(true);
 
-  if (isFeatureEnabled("transforms") === false) {
-    return;
-  }
-
   const { currentStyle } = props;
 
   const isAnyTransformPropertyAdded = transformPanels.some((panel) =>
@@ -89,6 +84,15 @@ export const Section = (props: SectionProps) => {
       panel,
     })
   );
+
+  const isBackfaceVisibilityUsed = isTransformPanelPropertyUsed({
+    currentStyle,
+    panel: "backfaceVisibility",
+  });
+  const isPerspectiveOriginUsed = isTransformPanelPropertyUsed({
+    currentStyle,
+    panel: "perspective",
+  });
 
   return (
     <CollapsibleSectionRoot
@@ -160,9 +164,9 @@ export const Section = (props: SectionProps) => {
         </CssValueListArrowFocus>
       ) : undefined}
 
-      <BackfaceVisibility />
+      {isBackfaceVisibilityUsed && <BackfaceVisibility />}
       <TransformAndPerspectiveOrigin property="transformOrigin" {...props} />
-      <TransformPerspective />
+      {isPerspectiveOriginUsed && <TransformPerspective />}
       <TransformAndPerspectiveOrigin property="perspectiveOrigin" {...props} />
     </CollapsibleSectionRoot>
   );
