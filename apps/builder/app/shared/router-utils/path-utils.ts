@@ -1,5 +1,4 @@
 import type { AUTH_PROVIDERS } from "~/shared/session";
-import { $authToken } from "../nano-states";
 import { publicStaticEnv } from "~/env/env.static";
 import { getAuthorizationServerOrigin } from "./origins";
 
@@ -74,30 +73,16 @@ export const dashboardUrl = (props: { origin: string }) => {
   return `${authServerOrigin}/dashboard`;
 };
 
-export const builderDomainsPath = (method: string) => {
-  const authToken = $authToken.get();
-  const urlSearchParams = new URLSearchParams();
-  if (authToken !== undefined) {
-    urlSearchParams.set("authToken", authToken);
-  }
-  const urlSearchParamsString = urlSearchParams.toString();
+export const cloneProjectUrl = (props: {
+  origin: string;
+  sourceAuthToken: string;
+}) => {
+  const authServerOrigin = getAuthorizationServerOrigin(props.origin);
 
-  return `/builder/domains/${method}${
-    urlSearchParamsString ? `?${urlSearchParamsString}` : ""
-  }`;
-};
+  const searchParams = new URLSearchParams();
+  searchParams.set("projectToCloneAuthToken", props.sourceAuthToken);
 
-export const projectsPath = (
-  method: string,
-  { authToken }: { authToken?: string } = {}
-) => {
-  const path = `/rest/projects/${method}`;
-  if (authToken === undefined) {
-    return path;
-  }
-  const urlSearchParams = new URLSearchParams();
-  urlSearchParams.set("authToken", authToken);
-  return path + `?${urlSearchParams.toString()}`;
+  return `${authServerOrigin}/dashboard?${searchParams.toString()}`;
 };
 
 export const loginPath = (params: {
@@ -127,27 +112,16 @@ export const authPath = ({
   provider: "google" | "github" | "dev";
 }) => `/auth/${provider}`;
 
-export const restAssetsPath = ({ authToken }: { authToken?: string }) => {
-  const urlSearchParams = new URLSearchParams();
-  if (authToken !== undefined) {
-    urlSearchParams.set("authToken", authToken);
-  }
-  const urlSearchParamsString = urlSearchParams.toString();
-
-  return `/rest/assets${
-    urlSearchParamsString ? `?${urlSearchParamsString}` : ""
-  }`;
+export const restAssetsPath = () => {
+  return `/rest/assets`;
 };
 
 export const restAssetsUploadPath = ({ name }: { name: string }) => {
   return `/rest/assets/${name}`;
 };
 
-export const restPatchPath = (props: { authToken?: string }) => {
+export const restPatchPath = () => {
   const urlSearchParams = new URLSearchParams();
-  if (props.authToken !== undefined) {
-    urlSearchParams.set("authToken", props.authToken);
-  }
 
   urlSearchParams.set("client-version", publicStaticEnv.VERSION);
 
