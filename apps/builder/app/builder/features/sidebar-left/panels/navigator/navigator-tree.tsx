@@ -16,7 +16,6 @@ import {
   TreeNodeLabel,
   TreeRoot,
   TreeSortableItem,
-  type ItemDropTarget,
   type TreeDropTarget,
 } from "@webstudio-is/design-system";
 import {
@@ -25,7 +24,7 @@ import {
   showAttribute,
   WsComponentMeta,
 } from "@webstudio-is/react-sdk";
-import type { Instance } from "@webstudio-is/sdk";
+import { ROOT_INSTANCE_ID, type Instance } from "@webstudio-is/sdk";
 import { EyeconClosedIcon, EyeconOpenIcon } from "@webstudio-is/icons";
 import {
   $dragAndDropState,
@@ -39,7 +38,7 @@ import {
   $selectedInstanceSelector,
   $selectedPage,
   getIndexedInstanceId,
-  ROOT_INSTANCE_ID,
+  type ItemDropTarget,
 } from "~/shared/nano-states";
 import type { InstanceSelector } from "~/shared/tree-utils";
 import { serverSyncStore } from "~/shared/sync";
