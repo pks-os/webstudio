@@ -18,7 +18,7 @@ const testFontWeights = (fontFamily: string) => {
   const canvas = document.createElement("canvas");
   canvas.width = 200;
   canvas.height = 20;
-  const context = canvas.getContext("2d");
+  const context = canvas.getContext("2d", { willReadFrequently: true });
   const supportedWeights: Array<FontWeight> = ["400"];
 
   if (context === null) {
@@ -81,9 +81,11 @@ const testFontWeights = (fontFamily: string) => {
   return supportedWeights.sort();
 };
 
-export const subscribeFontLoadingDone = () => {
-  // @todo move it to the call-site
-  const abortController = new AbortController();
+export const subscribeFontLoadingDone = ({
+  signal,
+}: {
+  signal: AbortSignal;
+}) => {
   document.fonts.addEventListener(
     "loadingdone",
     () => {
@@ -95,12 +97,8 @@ export const subscribeFontLoadingDone = () => {
       }
       $detectedFontsWeights.set(cache);
     },
-    { signal: abortController.signal }
+    { signal }
   );
-
-  return () => {
-    abortController.abort();
-  };
 };
 
 export const detectSupportedFontWeights = (stack: string) => {
