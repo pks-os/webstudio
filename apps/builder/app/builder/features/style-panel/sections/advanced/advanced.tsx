@@ -35,7 +35,7 @@ import { CssValueInputContainer } from "../../shared/css-value-input";
 import { styleConfigByName } from "../../shared/configs";
 import { deleteProperty, setProperty } from "../../shared/use-style-data";
 import {
-  $definedStyles,
+  $availableVariables,
   $matchingBreakpoints,
   getDefinedStyles,
   useComputedStyleDecl,
@@ -176,53 +176,39 @@ const AdvancedPropertyLabel = ({ property }: { property: StyleProperty }) => {
     styleDecl.source.name === "default" ? "code" : styleDecl.source.name;
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <Flex align="center">
-      <Tooltip
-        open={isOpen}
-        onOpenChange={setIsOpen}
-        // prevent closing tooltip on content click
-        onPointerDown={(event) => event.preventDefault()}
-        triggerProps={{
-          onClick: (event) => {
-            if (event.altKey) {
-              event.preventDefault();
-              deleteProperty(property);
-              return;
-            }
-            setIsOpen(true);
-          },
-        }}
-        content={
-          <PropertyInfo
-            title={label}
-            description={description}
-            styles={[styleDecl]}
-            onReset={() => {
-              deleteProperty(property);
-              setIsOpen(false);
-            }}
-          />
-        }
-      >
-        <Flex shrink gap={1} align="center">
-          <Label color={color} text="mono" truncate>
-            {label}
-          </Label>
-        </Flex>
-      </Tooltip>
-    </Flex>
+    <Tooltip
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      // prevent closing tooltip on content click
+      onPointerDown={(event) => event.preventDefault()}
+      triggerProps={{
+        onClick: (event) => {
+          if (event.altKey) {
+            event.preventDefault();
+            deleteProperty(property);
+            return;
+          }
+          setIsOpen(true);
+        },
+      }}
+      content={
+        <PropertyInfo
+          title={label}
+          description={description}
+          styles={[styleDecl]}
+          onReset={() => {
+            deleteProperty(property);
+            setIsOpen(false);
+          }}
+        />
+      }
+    >
+      <Label color={color} text="mono">
+        {label}
+      </Label>
+    </Tooltip>
   );
 };
-
-const $availableCustomProperties = computed($definedStyles, (definedStyles) => {
-  const customProperties = new Set<StyleProperty>();
-  for (const { property } of definedStyles) {
-    if (property.startsWith("--")) {
-      customProperties.add(property);
-    }
-  }
-  return customProperties;
-});
 
 const AdvancedPropertyValue = ({
   autoFocus,
@@ -232,7 +218,7 @@ const AdvancedPropertyValue = ({
   property: StyleProperty;
 }) => {
   const styleDecl = useComputedStyleDecl(property);
-  const availableCustomProperties = useStore($availableCustomProperties);
+  const availableVariables = useStore($availableVariables);
   const { items } = styleConfigByName(property);
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -269,16 +255,12 @@ const AdvancedPropertyValue = ({
       }
       property={property}
       styleSource={styleDecl.source.name}
-      keywords={[
+      options={[
         ...items.map((item) => ({
           type: "keyword" as const,
           value: item.name,
         })),
-        // very basic custom properties autocomplete
-        ...Array.from(availableCustomProperties).map((name) => ({
-          type: "keyword" as const,
-          value: name,
-        })),
+        ...availableVariables,
       ]}
       value={styleDecl.cascadedValue}
       setValue={(styleValue, options) => {
@@ -374,7 +356,7 @@ export const Section = () => {
       )}
       <Box>
         {advancedProperties.map((property) => (
-          <Flex key={property} wrap="wrap" align="center">
+          <Flex key={property} wrap="wrap" align="center" justify="start">
             <AdvancedPropertyLabel property={property} />
             <Text>:</Text>
             <AdvancedPropertyValue

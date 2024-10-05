@@ -1,12 +1,7 @@
 import { type ReactNode } from "react";
 import type { StyleProperty } from "@webstudio-is/css-engine";
 import { toValue } from "@webstudio-is/css-engine";
-import {
-  Box,
-  Grid,
-  NestedIconLabel,
-  ToggleButton,
-} from "@webstudio-is/design-system";
+import { Box, Grid, ToggleButton } from "@webstudio-is/design-system";
 import { CssValueInputContainer } from "../../shared/css-value-input";
 import { styleConfigByName } from "../../shared/configs";
 import { rowCss } from "./utils";
@@ -90,7 +85,7 @@ export const BorderProperty = ({
           <CssValueInputContainer
             property={firstPropertyName}
             styleSource={styleValueSourceColor}
-            keywords={keywords}
+            options={keywords}
             value={value}
             setValue={(newValue, options) => {
               const batch = createBatchUpdate();
@@ -124,16 +119,11 @@ export const BorderProperty = ({
             <CssValueInputContainer
               key={styleDecl.property}
               icon={
-                <NestedIconLabel>
-                  {
-                    borderPropertyOptions[styleDecl.property as StyleProperty]
-                      ?.icon
-                  }
-                </NestedIconLabel>
+                borderPropertyOptions[styleDecl.property as StyleProperty]?.icon
               }
               property={styleDecl.property as StyleProperty}
               styleSource={styleDecl.source.name}
-              keywords={keywords}
+              options={keywords}
               value={styleDecl.cascadedValue}
               setValue={setProperty(styleDecl.property as StyleProperty)}
               deleteProperty={deleteProperty}
