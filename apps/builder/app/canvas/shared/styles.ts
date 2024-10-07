@@ -20,7 +20,6 @@ import {
 import {
   type VarValue,
   createRegularStyleSheet,
-  isValidStaticStyleValue,
   toValue,
 } from "@webstudio-is/css-engine";
 import {
@@ -147,21 +146,17 @@ const getEphemeralProperty = (styleDecl: StyleDecl) => {
 // wrap normal style value with var(--namespace, value) to support ephemeral styles updates
 // between all token usages
 const toVarValue = (styleDecl: StyleDecl): undefined | VarValue => {
-  const { value } = styleDecl;
-  if (value.type === "var") {
-    return value;
-  }
-  // Values like InvalidValue, UnsetValue, VarValue don't need to be wrapped
-  if (isValidStaticStyleValue(value)) {
-    return {
-      type: "var",
-      // var style value is relying on name without leading "--"
-      // escape complex selectors in state like ":hover"
-      // setProperty and removeProperty escape automatically
-      value: CSS.escape(getEphemeralProperty(styleDecl).slice(2)),
-      fallback: { type: "unparsed", value: toValue(value) },
-    };
-  }
+  return {
+    type: "var",
+    // var style value is relying on name without leading "--"
+    // escape complex selectors in state like ":hover"
+    // setProperty and removeProperty escape automatically
+    value: CSS.escape(getEphemeralProperty(styleDecl).slice(2)),
+    fallback: {
+      type: "unparsed",
+      value: toValue(styleDecl.value, $transformValue.get()),
+    },
+  };
 };
 
 const $descendantSelectors = computed(
