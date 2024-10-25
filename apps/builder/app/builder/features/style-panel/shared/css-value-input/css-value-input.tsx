@@ -16,6 +16,7 @@ import {
   theme,
   Flex,
   styled,
+  Text,
 } from "@webstudio-is/design-system";
 import type {
   KeywordValue,
@@ -51,6 +52,7 @@ import {
 import { convertUnits } from "./convert-units";
 import { mergeRefs } from "@react-aria/utils";
 import { composeEventHandlers } from "~/shared/event-utils";
+import { ColorThumb } from "../color-thumb";
 
 // We need to enable scrub on properties that can have numeric value.
 const canBeNumber = (property: StyleProperty, value: CssValueInputValue) => {
@@ -275,14 +277,20 @@ const initialValue: IntermediateStyleValue = {
 };
 
 const itemToString = (item: CssValueInputValue | null) => {
-  return item === null
-    ? ""
-    : item.type === "keyword" || item.type === "var"
-      ? // E.g. we want currentcolor to be lower case
-        toValue(item).toLocaleLowerCase()
-      : item.type === "intermediate" || item.type === "unit"
-        ? String(item.value)
-        : toValue(item);
+  if (item === null) {
+    return "";
+  }
+  if (item.type === "var") {
+    return `var(--${item.value})`;
+  }
+  if (item.type === "keyword") {
+    // E.g. we want currentcolor to be lower case
+    return toValue(item).toLocaleLowerCase();
+  }
+  if (item.type === "intermediate" || item.type === "unit") {
+    return String(item.value);
+  }
+  return toValue(item);
 };
 
 const Description = styled(Box, { width: theme.spacing[27] });
@@ -337,6 +345,9 @@ export const CssValueInput = ({
   ...props
 }: CssValueInputProps) => {
   const value = props.intermediateValue ?? props.value ?? initialValue;
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
   // Used to show description
   const [highlightedValue, setHighlighedValue] = useState<
     StyleValue | undefined
@@ -516,7 +527,15 @@ export const CssValueInput = ({
   });
 
   const shouldHandleEvent = useCallback((node: Node) => {
-    return suffixRef.current?.contains?.(node) === false;
+    // prevent scrubbing when css variable is selected
+    if (valueRef.current.type === "var") {
+      return false;
+    }
+    // prevent scrubbing when unit select is in use
+    if (suffixRef.current?.contains?.(node)) {
+      return false;
+    }
+    return true;
   }, []);
 
   const [scrubRef, inputRef] = useScrub({
@@ -734,9 +753,28 @@ export const CssValueInput = ({
                     {...getItemProps({ item, index })}
                     key={index}
                   >
-                    {item.type === "var"
-                      ? `--${item.value}`
-                      : itemToString(item)}
+                    {item.type === "var" ? (
+                      <Flex justify="between" align="center" grow gap={2}>
+                        <Box>--{item.value}</Box>
+                        {item.fallback?.type === "unit" && (
+                          <Text variant="small" color="subtle">
+                            {toValue(item.fallback)}
+                          </Text>
+                        )}
+                        {item.fallback?.type === "rgb" && (
+                          <ColorThumb
+                            color={{
+                              r: item.fallback.r,
+                              g: item.fallback.g,
+                              b: item.fallback.b,
+                              a: item.fallback.alpha,
+                            }}
+                          />
+                        )}
+                      </Flex>
+                    ) : (
+                      itemToString(item)
+                    )}
                   </ComboboxListboxItem>
                 ))}
               </ComboboxScrollArea>

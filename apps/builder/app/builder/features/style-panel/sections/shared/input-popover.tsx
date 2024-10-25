@@ -17,7 +17,7 @@ import { theme } from "@webstudio-is/design-system";
 import { getInsetModifiersGroup, getSpaceModifiersGroup } from "./scrub";
 import type { SpaceStyleProperty } from "../space/types";
 import type { InsetProperty } from "../position/inset-layout";
-import { $availableVariables } from "../../shared/model";
+import { $availableUnitVariables } from "../../shared/model";
 
 const slideUpAndFade = keyframes({
   "0%": { opacity: 0, transform: "scale(0.8)" },
@@ -50,7 +50,7 @@ const Input = ({
       property={property}
       value={value}
       intermediateValue={intermediateValue}
-      getOptions={() => $availableVariables.get()}
+      getOptions={() => $availableUnitVariables.get()}
       onChange={(styleValue) => {
         setIntermediateValue(styleValue);
         if (styleValue === undefined) {
@@ -76,7 +76,7 @@ const Input = ({
         batch.setProperty(property)(styleValue);
         batch.publish({ isEphemeral: true });
       }}
-      onChangeComplete={({ value, type, altKey, shiftKey }) => {
+      onChangeComplete={({ value, altKey, shiftKey }) => {
         const batch = createBatchUpdate();
         const modifiers = { shiftKey, altKey };
         const properties = isSpace(property)
@@ -86,10 +86,8 @@ const Input = ({
         for (const property of properties) {
           batch.setProperty(property)(value);
         }
-        batch.publish({ isEphemeral: false });
-        if (type === "blur" || type === "enter") {
-          onClosePopover();
-        }
+        batch.publish();
+        onClosePopover();
       }}
       onAbort={() => {
         const batch = createBatchUpdate();
@@ -142,7 +140,13 @@ export const InputPopover = ({
       <PopoverTrigger asChild>
         <Trigger />
       </PopoverTrigger>
-      <PopoverContentStyled hideArrow sideOffset={-24}>
+      <PopoverContentStyled
+        hideArrow
+        sideOffset={-24}
+        // prevent propagating click on input or combobox menu
+        // and closing popover before applying changes
+        onClick={(event) => event.stopPropagation()}
+      >
         <Input
           styleSource={styleSource}
           value={value}
