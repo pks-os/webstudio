@@ -67,6 +67,8 @@ import { PropertyInfo } from "../../property-label";
 import { sections } from "../sections";
 import { ColorPopover } from "../../shared/color-picker";
 import {
+  $instances,
+  $registeredComponentMetas,
   $selectedInstanceSelector,
   $styles,
   $styleSourceSelections,
@@ -136,10 +138,9 @@ const matchOrSuggestToCreate = (
 };
 
 const getNewPropertyDescription = (item: null | SearchItem) => {
-  let description = `Create CSS variable.`;
+  let description: string | undefined = `Create CSS variable.`;
   if (item && item.value in propertyDescriptions) {
-    description =
-      propertyDescriptions[item.value as keyof typeof propertyDescriptions];
+    description = propertyDescriptions[item.value];
   }
   return <Box css={{ width: theme.spacing[28] }}>{description}</Box>;
 };
@@ -259,8 +260,7 @@ const AdvancedSearch = ({
 const AdvancedPropertyLabel = ({ property }: { property: StyleProperty }) => {
   const styleDecl = useComputedStyleDecl(property);
   const label = hyphenateProperty(property);
-  const description =
-    propertyDescriptions[property as keyof typeof propertyDescriptions];
+  const description = propertyDescriptions[property];
   const color =
     styleDecl.source.name === "default" ? "code" : styleDecl.source.name;
   const [isOpen, setIsOpen] = useState(false);
@@ -377,11 +377,20 @@ const initialProperties = new Set<StyleProperty>([
 const $advancedProperties = computed(
   [
     $selectedInstanceSelector,
+    $instances,
+    $registeredComponentMetas,
     $styleSourceSelections,
     $matchingBreakpoints,
     $styles,
   ],
-  (instanceSelector, styleSourceSelections, matchingBreakpoints, styles) => {
+  (
+    instanceSelector,
+    instances,
+    metas,
+    styleSourceSelections,
+    matchingBreakpoints,
+    styles
+  ) => {
     if (instanceSelector === undefined) {
       return [];
     }
@@ -393,6 +402,8 @@ const $advancedProperties = computed(
           instanceSelector;
     const definedStyles = getDefinedStyles({
       instanceSelector: instanceAndRootSelector,
+      instances,
+      metas,
       matchingBreakpoints,
       styleSourceSelections,
       styles,
