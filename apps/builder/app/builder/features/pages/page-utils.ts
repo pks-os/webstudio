@@ -4,7 +4,6 @@ import {
   type Page,
   type Folder,
   type WebstudioData,
-  type System,
   Pages,
   findPageByIdOrPath,
   getPagePath,
@@ -19,18 +18,13 @@ import {
   updateWebstudioData,
 } from "~/shared/instance-utils";
 import {
-  $dataSourceVariables,
   $dataSources,
-  $editingPageId,
   $pages,
-  $publishedOrigin,
-  $resourceValues,
   $selectedInstanceSelector,
-  $selectedPageId,
-  getPageDefaultSystem,
-  mergeSystem,
+  $variableValuesByInstanceSelector,
 } from "~/shared/nano-states";
 import { insertPageCopyMutable } from "~/shared/page-utils";
+import { $awareness, $selectedPage } from "~/shared/awareness";
 
 /**
  * When page or folder needs to be deleted or moved to a different parent,
@@ -211,8 +205,8 @@ export const getAllChildrenAndSelf = (
 export const deletePageMutable = (pageId: Page["id"], data: WebstudioData) => {
   const { pages } = data;
   // deselect page before deleting to avoid flash of content
-  if ($selectedPageId.get() === pageId) {
-    $selectedPageId.set(pages.homePage.id);
+  if ($awareness.get()?.pageId === pageId) {
+    $awareness.set({ pageId: pages.homePage.id });
     $selectedInstanceSelector.set(undefined);
   }
   const rootInstanceId = findPageByIdOrPath(pageId, pages)?.rootInstanceId;
@@ -244,75 +238,20 @@ export const deleteFolderWithChildrenMutable = (
   };
 };
 
-const $editingPage = computed(
-  [$editingPageId, $pages],
-  (editingPageId, pages) => {
-    if (editingPageId === undefined || pages === undefined) {
-      return;
-    }
-    return findPageByIdOrPath(editingPageId, pages);
-  }
-);
-
-const $editingPagePath = computed($editingPage, (page) => page?.path);
-
-const $editingPageHistory = computed($editingPage, (page) => page?.history);
-
-const $editingPageDefaultSystem = computed(
-  [$publishedOrigin, $editingPagePath, $editingPageHistory],
-  (origin, path, history) => getPageDefaultSystem({ origin, path, history })
-);
-
-const $pageRootVariableValues = computed(
-  [
-    $editingPage,
-    $dataSources,
-    $dataSourceVariables,
-    $resourceValues,
-    $editingPageDefaultSystem,
-  ],
-  (page, dataSources, dataSourceVariables, resourceValues, defaultSystem) => {
-    const variableValues = new Map<string, unknown>();
-    if (page === undefined) {
-      return variableValues;
-    }
-    for (const variable of dataSources.values()) {
-      if (variable.scopeInstanceId !== page.rootInstanceId) {
-        continue;
-      }
-      if (variable.type === "variable") {
-        const value = dataSourceVariables.get(variable.id);
-        variableValues.set(variable.id, value ?? variable.value.value);
-      }
-      if (variable.type === "parameter") {
-        const value = dataSourceVariables.get(variable.id);
-        variableValues.set(variable.id, value);
-        if (variable.id === page.systemDataSourceId) {
-          variableValues.set(
-            variable.id,
-            mergeSystem(defaultSystem, value as undefined | System)
-          );
-        }
-      }
-      if (variable.type === "resource") {
-        const value = resourceValues.get(variable.resourceId);
-        variableValues.set(variable.id, value);
-      }
-    }
-    return variableValues;
-  }
-);
-
 export const $pageRootScope = computed(
-  [$editingPage, $pageRootVariableValues, $dataSources],
-  (editingPage, pageRootVariableValues, dataSources) => {
+  [$selectedPage, $variableValuesByInstanceSelector, $dataSources],
+  (page, variableValuesByInstanceSelector, dataSources) => {
     const scope: Record<string, unknown> = {};
     const aliases = new Map<string, string>();
     const defaultValues = new Map<string, unknown>();
-    if (editingPage === undefined) {
+    if (page === undefined) {
       return { variableValues: defaultValues, scope, aliases };
     }
-    for (const [dataSourceId, value] of pageRootVariableValues) {
+    const values =
+      variableValuesByInstanceSelector.get(
+        JSON.stringify([page.rootInstanceId])
+      ) ?? new Map<string, unknown>();
+    for (const [dataSourceId, value] of values) {
       const dataSource = dataSources.get(dataSourceId);
       if (dataSource === undefined) {
         continue;
@@ -321,7 +260,7 @@ export const $pageRootScope = computed(
       scope[name] = value;
       aliases.set(name, dataSource.name);
     }
-    return { variableValues: pageRootVariableValues, scope, aliases };
+    return { variableValues: values, scope, aliases };
   }
 );
 

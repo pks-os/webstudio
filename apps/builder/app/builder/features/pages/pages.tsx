@@ -27,7 +27,7 @@ import {
 } from "@webstudio-is/icons";
 import { ExtendedPanel } from "../../shared/extended-sidebar-panel";
 import { NewPageSettings, PageSettings } from "./page-settings";
-import { $editingPageId, $pages, $selectedPageId } from "~/shared/nano-states";
+import { $editingPageId, $pages } from "~/shared/nano-states";
 import { switchPage } from "~/shared/pages";
 import {
   getAllChildrenAndSelf,
@@ -50,6 +50,7 @@ import {
 import { atom, computed } from "nanostores";
 import { isPathnamePattern } from "~/builder/shared/url-pattern";
 import { updateWebstudioData } from "~/shared/instance-utils";
+import { $selectedPage } from "~/shared/awareness";
 
 const ItemSuffix = ({
   isParentSelected,
@@ -434,19 +435,19 @@ const newPageId = "new-page";
 
 const PageEditor = ({
   editingPageId,
-  setEditingPageId,
+  onClose,
 }: {
   editingPageId: string;
-  setEditingPageId: (pageId?: string) => void;
+  onClose: () => void;
 }) => {
-  const currentPageId = useStore($selectedPageId);
+  const currentPage = useStore($selectedPage);
 
   if (editingPageId === newPageId) {
     return (
       <NewPageSettings
-        onClose={() => setEditingPageId(undefined)}
+        onClose={onClose}
         onSuccess={(pageId) => {
-          setEditingPageId(undefined);
+          onClose();
           switchPage(pageId);
         }}
       />
@@ -455,11 +456,11 @@ const PageEditor = ({
 
   return (
     <PageSettings
-      onClose={() => setEditingPageId(undefined)}
+      onClose={onClose}
       onDelete={() => {
-        setEditingPageId(undefined);
+        onClose();
         // switch to home page when deleted currently selected page
-        if (editingPageId === currentPageId) {
+        if (editingPageId === currentPage?.id) {
           const pages = $pages.get();
           if (pages) {
             switchPage(pages.homePage.id);
@@ -467,7 +468,7 @@ const PageEditor = ({
         }
       }}
       onDuplicate={(newPageId) => {
-        setEditingPageId(undefined);
+        onClose();
         switchPage(newPageId);
       }}
       pageId={editingPageId}
@@ -478,29 +479,25 @@ const PageEditor = ({
 
 const FolderEditor = ({
   editingFolderId,
-  setEditingFolderId,
+  onClose,
 }: {
   editingFolderId: string;
-  setEditingFolderId: (pageId?: string) => void;
+  onClose: () => void;
 }) => {
   if (editingFolderId === newFolderId) {
     return (
       <NewFolderSettings
-        onClose={() => setEditingFolderId(undefined)}
-        onSuccess={() => {
-          setEditingFolderId(undefined);
-        }}
         key={newFolderId}
+        onClose={onClose}
+        onSuccess={onClose}
       />
     );
   }
 
   return (
     <FolderSettings
-      onClose={() => setEditingFolderId(undefined)}
-      onDelete={() => {
-        setEditingFolderId(undefined);
-      }}
+      onClose={onClose}
+      onDelete={onClose}
       folderId={editingFolderId}
       key={editingFolderId}
     />
@@ -508,11 +505,11 @@ const FolderEditor = ({
 };
 
 export const PagesPanel = ({ onClose }: { onClose: () => void }) => {
-  const currentPageId = useStore($selectedPageId);
+  const currentPage = useStore($selectedPage);
   const editingItemId = useStore($editingPageId);
   const pages = useStore($pages);
 
-  if (currentPageId === undefined || pages === undefined) {
+  if (currentPage === undefined || pages === undefined) {
     return;
   }
 
@@ -561,13 +558,19 @@ export const PagesPanel = ({ onClose }: { onClose: () => void }) => {
       <Separator />
 
       <PagesTree
-        selectedPageId={currentPageId}
+        selectedPageId={currentPage.id}
         onSelect={(itemId) => {
           switchPage(itemId);
           onClose();
         }}
         editingItemId={editingItemId}
-        onEdit={$editingPageId.set}
+        onEdit={(itemId) => {
+          // always select page when edit its settings
+          if (itemId && isFolder(itemId, pages.folders) === false) {
+            switchPage(itemId);
+          }
+          $editingPageId.set(itemId);
+        }}
       />
 
       <ExtendedPanel isOpen={editingItemId !== undefined}>
@@ -576,12 +579,12 @@ export const PagesPanel = ({ onClose }: { onClose: () => void }) => {
             {isFolder(editingItemId, pages.folders) ? (
               <FolderEditor
                 editingFolderId={editingItemId}
-                setEditingFolderId={$editingPageId.set}
+                onClose={() => $editingPageId.set(undefined)}
               />
             ) : (
               <PageEditor
                 editingPageId={editingItemId}
-                setEditingPageId={$editingPageId.set}
+                onClose={() => $editingPageId.set(undefined)}
               />
             )}
           </>
