@@ -19,8 +19,8 @@ import { createComputedStyleDeclStore } from "./model";
 import { parseCssFragment } from "./css-fragment";
 import {
   $breakpoints,
+  $instances,
   $selectedBreakpointId,
-  $selectedInstanceSelector,
   $styles,
   $styleSources,
   $styleSourceSelections,
@@ -28,6 +28,7 @@ import {
 import { registerContainers } from "~/shared/sync";
 import { setProperty } from "./use-style-data";
 import type { ComputedStyleDecl } from "~/shared/style-object-model";
+import { $awareness } from "~/shared/awareness";
 
 setEnv("*");
 registerContainers();
@@ -35,7 +36,15 @@ registerContainers();
 beforeEach(() => {
   $breakpoints.set(new Map([["base", { id: "base", label: "" }]]));
   $selectedBreakpointId.set("base");
-  $selectedInstanceSelector.set(["box"]);
+  $awareness.set({
+    pageId: "",
+    instanceSelector: ["box"],
+  });
+  $instances.set(
+    new Map([
+      ["box", { type: "instance", id: "box", component: "Box", children: [] }],
+    ])
+  );
   $styleSourceSelections.set(new Map());
   $styleSources.set(new Map());
   $styles.set(new Map());
