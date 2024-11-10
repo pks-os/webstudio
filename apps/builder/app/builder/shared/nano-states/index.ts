@@ -41,7 +41,7 @@ export const $activeInspectorPanel = atom<"style" | "settings">("style");
 export const $userPlanFeatures = atom<UserPlanFeatures>({
   allowShareAdminLinks: false,
   allowDynamicData: false,
-  allowContactEmail: false,
+  maxContactEmails: 0,
   maxDomainsAllowedPerUser: 1,
   hasSubscription: false,
   hasProPlan: false,
@@ -100,7 +100,10 @@ export const $activeSidebarPanel = computed(
   }
 );
 
-export const setActiveSidebarPanel = (nextPanel?: SidebarPanelName) => {
+/**
+ * auto shows default panel when sidepanel is undocked and hides when docked
+ */
+export const setActiveSidebarPanel = (nextPanel: "auto" | SidebarPanelName) => {
   const currentPanel = $activeSidebarPanel.get();
   // - When navigator is open, user is trying to close the navigator.
   // - Navigator is closed, user is trying to close some other panel, and if navigator is undocked, it needs to be opened.
@@ -114,7 +117,7 @@ export const setActiveSidebarPanel = (nextPanel?: SidebarPanelName) => {
       return;
     }
   }
-  $activeSidebarPanel_.set(nextPanel);
+  $activeSidebarPanel_.set(nextPanel === "auto" ? undefined : nextPanel);
 };
 
 export const toggleActiveSidebarPanel = (panel: SidebarPanelName) => {
