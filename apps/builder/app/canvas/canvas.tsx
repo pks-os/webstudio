@@ -54,7 +54,7 @@ import {
   initCopyPaste,
   initCopyPasteForContentEditMode,
 } from "~/shared/copy-paste/init-copy-paste";
-import { setDataCollapsed, subscribeCollapsedToPubSub } from "./collapsed";
+import { setDataCollapsed, subscribeCollapsed } from "./collapsed";
 import { useWindowResizeDebounced } from "~/shared/dom-hooks";
 import { subscribeInstanceSelection } from "./instance-selection";
 import { subscribeInstanceHovering } from "./instance-hovering";
@@ -227,7 +227,7 @@ type CanvasProps = {
 };
 
 export const Canvas = ({ params, imageLoader }: CanvasProps) => {
-  useCanvasStore(publish);
+  useCanvasStore();
   const isDesignMode = useStore($isDesignMode);
   const isContentMode = useStore($isContentMode);
 
@@ -294,7 +294,7 @@ export const Canvas = ({ params, imageLoader }: CanvasProps) => {
     }
   });
 
-  useEffect(subscribeCollapsedToPubSub, []);
+  useEffect(subscribeCollapsed, []);
 
   useHashLinkSync();
 

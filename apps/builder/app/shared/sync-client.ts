@@ -1,17 +1,151 @@
 import { nanoid } from "nanoid";
 import { createNanoEvents, type Emitter } from "nanoevents";
 import type { Change, Store } from "immerhin";
+import type { WritableAtom } from "nanostores";
 
-type Transaction = {
+export type Transaction<Payload = unknown> = {
   id: string;
-  changes: Change[];
+  object: string;
+  payload: Payload;
 };
+
+export type RevertedTransaction = {
+  id: string;
+  object: string;
+};
+
+interface SyncObject {
+  name: string;
+  getState(): unknown;
+  setState(state: unknown): void;
+  addTransaction(transaction: Transaction): void;
+  revertTransaction(transaction: RevertedTransaction): void;
+  subscribe(
+    callback: (transaction: Transaction) => void,
+    signal: AbortSignal
+  ): void;
+}
+
+export class ImmerhinSyncObject implements SyncObject {
+  name: string;
+  store: Store;
+  constructor(name: string, store: Store) {
+    this.name = name;
+    this.store = store;
+  }
+  getState() {
+    const state = new Map<string, unknown>();
+    for (const [namespace, $store] of this.store.containers) {
+      state.set(namespace, $store.get());
+    }
+    return state;
+  }
+  setState(state: Map<string, unknown>) {
+    for (const [namespace, $store] of this.store.containers) {
+      // Immer cannot handle Map instances from another realm.
+      // Use `clone` to recreate the data with the current realm's classes.
+      // This works because the structured clone algorithm skips prototype chains; classes must be defined in both realms.
+      $store.set(structuredClone(state.get(namespace)));
+    }
+  }
+  addTransaction(transaction: Transaction<Change[]>) {
+    this.store.addTransaction(transaction.id, transaction.payload, "remote");
+  }
+  revertTransaction(transaction: RevertedTransaction) {
+    this.store.revertTransaction(transaction.id);
+  }
+  subscribe(
+    callback: (transaction: Transaction<Change[]>) => void,
+    signal: AbortSignal
+  ) {
+    const unsubscribe = this.store.subscribe((id, payload, source) => {
+      if (source === "remote") {
+        return;
+      }
+      callback({ id, object: this.name, payload });
+    });
+    signal.addEventListener("abort", unsubscribe);
+  }
+}
+
+export class NanostoresSyncObject implements SyncObject {
+  name: string;
+  store: WritableAtom<unknown>;
+  // track the source of "store.set" to avoid cyclic updates
+  operation: "local" | "state" | "add" = "local";
+  constructor(name: string, store: WritableAtom<unknown>) {
+    this.name = name;
+    this.store = store;
+  }
+  getState() {
+    return this.store.get();
+  }
+  setState(state: unknown) {
+    this.operation = "state";
+    this.store.set(state);
+    this.operation = "local";
+  }
+  addTransaction(transaction: Transaction) {
+    this.operation = "add";
+    // `instanceof` checks do not work with instances like Map, File, etc., from another realm.
+    // Use `clone` to recreate the data with the current realm's classes.
+    // This works because the structured clone algorithm skips prototype chains; classes must be defined in both realms.
+    this.store.set(structuredClone(transaction.payload));
+    this.operation = "local";
+  }
+  revertTransaction(_transaction: RevertedTransaction) {
+    // @todo store the list of transactions
+  }
+  subscribe(callback: (transaction: Transaction) => void, signal: AbortSignal) {
+    const unsubscribe = this.store.listen((payload) => {
+      if (this.operation !== "local") {
+        return;
+      }
+      const transaction = { id: nanoid(), object: this.name, payload };
+      callback(transaction);
+    });
+    signal.addEventListener("abort", unsubscribe);
+  }
+}
+
+export class SyncObjectPool implements SyncObject {
+  name = "SyncObjectPool";
+  objects = new Map<string, SyncObject>();
+  constructor(objects: SyncObject[]) {
+    for (const object of objects) {
+      this.objects.set(object.name, object);
+    }
+  }
+  getState() {
+    const state = new Map<string, unknown>();
+    for (const [name, object] of this.objects) {
+      state.set(name, object.getState());
+    }
+    return state;
+  }
+  setState(state: Map<string, unknown>) {
+    for (const [name, object] of this.objects) {
+      object.setState(state.get(name) as never);
+    }
+  }
+  addTransaction(transaction: Transaction) {
+    this.objects.get(transaction.object)?.addTransaction(transaction);
+  }
+  revertTransaction(transaction: RevertedTransaction) {
+    this.objects.get(transaction.object)?.revertTransaction(transaction);
+  }
+  subscribe(callback: (transaction: Transaction) => void, signal: AbortSignal) {
+    for (const object of this.objects.values()) {
+      object.subscribe(callback, signal);
+    }
+  }
+}
 
 type SyncMessage =
   | { type: "connect"; clientId: string }
-  | { type: "state"; clientId: string; state: Map<string, unknown> }
+  | { type: "state"; clientId: string; state: unknown }
   | { type: "commit"; clientId: string; transaction: Transaction }
-  | { type: "revert"; clientId: string; transactionId: string };
+  | { type: "revert"; clientId: string; transaction: RevertedTransaction };
 
 export type SyncEmitter = Emitter<{
   message: (message: SyncMessage) => void;
@@ -19,38 +153,30 @@ export type SyncEmitter = Emitter<{
 
 type SyncClientOptions = {
   role: "leader" | "follower";
-  store: Store;
+  object: SyncObject;
   emitter?: SyncEmitter;
 };
 
 export class SyncClient {
   clientId = nanoid();
   role: SyncClientOptions["role"];
-  store: Store;
+  object: SyncObject;
   emitter: SyncEmitter;
   connection: "disconnected" | "connecting" | "connected" = "disconnected";
 
   constructor(options: SyncClientOptions) {
     this.role = options.role;
-    this.store = options.store;
+    this.object = options.object;
     this.emitter = options.emitter ?? createNanoEvents();
-  }
-
-  broadcastState() {
-    const state = new Map<string, unknown>();
-    for (const [namespace, $store] of this.store.containers) {
-      state.set(namespace, $store.get());
-    }
-    this.emitter.emit("message", {
-      clientId: this.clientId,
-      type: "state",
-      state,
-    });
   }
 
   lead() {
     this.role = "leader";
-    this.broadcastState();
+    this.emitter.emit("message", {
+      clientId: this.clientId,
+      type: "state",
+      state: this.object.getState(),
+    });
   }
 
   connect({ signal }: { signal: AbortSignal }) {
@@ -63,18 +189,18 @@ export class SyncClient {
         if (this.role !== "leader") {
           return;
         }
-        this.broadcastState();
+        this.emitter.emit("message", {
+          clientId: this.clientId,
+          type: "state",
+          state: this.object.getState(),
+        });
       }
       if (message.type === "state") {
         if (this.connection === "connected") {
           return;
         }
         this.connection = "connected";
-        for (const [namespace, $store] of this.store.containers) {
-          // immer is not able to work with Map instances from another realm
-          // use clone to recreate data with current realm classes
-          $store.set(structuredClone(message.state.get(namespace)));
-        }
+        this.object.setState(message.state);
       }
       if (message.type === "commit") {
         /*
@@ -85,33 +211,21 @@ export class SyncClient {
           return;
         }
         */
-        this.store.addTransaction(
-          message.transaction.id,
-          message.transaction.changes,
-          "remote"
-        );
+        this.object.addTransaction(message.transaction);
       }
       if (message.type === "revert") {
-        this.store.revertTransaction(message.transactionId);
+        this.object.revertTransaction(message.transaction);
       }
     });
+    signal.addEventListener("abort", off);
 
-    const unsubscribe = this.store.subscribe((id, changes, source) => {
-      if (source === "remote") {
-        return;
-      }
-      const transaction: Transaction = { id, changes };
+    this.object.subscribe((transaction) => {
       this.emitter.emit("message", {
         clientId: this.clientId,
         type: "commit",
         transaction,
       });
-    });
-
-    signal.addEventListener("abort", () => {
-      off();
-      unsubscribe();
-    });
+    }, signal);
 
     this.emitter.emit("message", {
       clientId: this.clientId,
@@ -121,7 +235,11 @@ export class SyncClient {
       this.connection = "connecting";
     }
     if (this.role === "leader") {
-      this.broadcastState();
+      this.emitter.emit("message", {
+        clientId: this.clientId,
+        type: "state",
+        state: this.object.getState(),
+      });
     }
   }
 }
