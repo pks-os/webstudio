@@ -41,10 +41,11 @@ import {
   $collaborativeInstanceSelector,
   $hoveredInstanceOutline,
   $selectedInstanceOutline,
-  $editableBlockChildOutline,
+  $blockChildOutline,
   $textToolbar,
   $registeredComponentMetas,
   $registeredComponentPropsMetas,
+  $modifierKeys,
 } from "~/shared/nano-states";
 import { $ephemeralStyles } from "~/canvas/stores";
 import { $awareness } from "../awareness";
@@ -138,10 +139,8 @@ const createObjectPool = () => {
       $selectedInstanceOutline
     ),
     new NanostoresSyncObject("hoveredInstanceOutline", $hoveredInstanceOutline),
-    new NanostoresSyncObject(
-      "editableBlockChildOutline",
-      $editableBlockChildOutline
-    ),
+    new NanostoresSyncObject("blockChildOutline", $blockChildOutline),
+    new NanostoresSyncObject("modifierKeys", $modifierKeys),
 
     new NanostoresSyncObject(
       "collaborativeInstanceSelector",

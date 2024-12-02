@@ -72,41 +72,6 @@ type OutlineProps = {
   variant?: "default" | "collaboration" | "slot";
 };
 
-export const EditableBlockChildAddButtonOutline = ({
-  rect,
-  children,
-}: {
-  rect: Rect;
-  children: ReactNode;
-}) => {
-  const dynamicStyle = useDynamicStyle(rect);
-
-  return (
-    <>
-      <div
-        className={`${baseStyle()} ${baseOutlineStyle()}`}
-        style={dynamicStyle}
-      >
-        <div
-          style={{
-            height: 0,
-            width: 0,
-            display: "grid",
-
-            alignContent: "start",
-            justifyContent: "end",
-
-            justifySelf: "start",
-            alignSelf: "start",
-          }}
-        >
-          {children}
-        </div>
-      </div>
-    </>
-  );
-};
-
 export const Outline = ({ children, rect, variant }: OutlineProps) => {
   const dynamicStyle = useDynamicStyle(rect);
 

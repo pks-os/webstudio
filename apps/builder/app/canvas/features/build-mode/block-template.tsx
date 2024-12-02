@@ -7,7 +7,7 @@ import {
 import * as React from "react";
 import { $isDesignMode, $selectedInstanceSelector } from "~/shared/nano-states";
 
-export const EditableBlockTemplate = React.forwardRef<
+export const BlockTemplate = React.forwardRef<
   HTMLDivElement,
   WebstudioComponentSystemProps & { children: React.ReactNode }
 >(({ ...props }, ref) => {
@@ -34,5 +34,13 @@ export const EditableBlockTemplate = React.forwardRef<
     return;
   }
 
-  return <div style={{ display: "contents" }} ref={ref} {...props} />;
+  const childrenCount = React.Children.count(props.children);
+
+  return (
+    <div
+      style={{ display: childrenCount === 0 ? "block" : "contents" }}
+      ref={ref}
+      {...props}
+    />
+  );
 }) as AnyComponent;
