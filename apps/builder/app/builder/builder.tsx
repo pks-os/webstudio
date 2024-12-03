@@ -19,6 +19,7 @@ import { Topbar } from "./features/topbar";
 import { Footer } from "./features/footer";
 import {
   CanvasIframe,
+  CanvasToolsContainer,
   useReadCanvasRect,
   Workspace,
 } from "./features/workspace";
@@ -63,11 +64,13 @@ import { migrateWebstudioDataMutable } from "~/shared/webstudio-data-migrator";
 import { Loading, LoadingBackground } from "./shared/loading";
 import { mergeRefs } from "@react-aria/utils";
 import { CommandPanel } from "./features/command-panel";
+
 import {
   initCopyPaste,
   initCopyPasteForContentEditMode,
 } from "~/shared/copy-paste/init-copy-paste";
 import { useInertHandlers } from "./shared/inert-handlers";
+import { TextToolbar } from "./features/workspace/canvas-tools/text-toolbar";
 
 registerContainers();
 
@@ -93,7 +96,6 @@ const SidePanel = ({
 }: SidePanelProps) => {
   return (
     <Box
-      id="jopa"
       as="aside"
       css={{
         position: "relative",
@@ -115,13 +117,15 @@ const SidePanel = ({
   );
 };
 
-const Main = ({ children }: { children: ReactNode }) => (
+const Main = ({ children, css }: { children: ReactNode; css?: CSS }) => (
   <Flex
     as="main"
     direction="column"
     css={{
       gridArea: "main",
       position: "relative",
+      isolation: "isolate",
+      ...css,
     }}
   >
     {children}
@@ -361,24 +365,6 @@ export const Builder = ({
           navigatorLayout={navigatorLayout}
         >
           <ProjectSettings />
-          <Topbar
-            project={project}
-            hasProPlan={userPlanFeatures.hasProPlan}
-            css={{ gridArea: "header" }}
-            loading={
-              <LoadingBackground
-                // Looks nicer when topbar is already visible earlier, so user has more sense of progress.
-                show={
-                  loadingState.readyStates.get("dataLoadingState")
-                    ? false
-                    : true
-                }
-              />
-            }
-          />
-          <SidePanel gridArea="sidebar">
-            <SidebarLeft publish={publish} />
-          </SidePanel>
           <Main>
             <Workspace onTransitionEnd={onTransitionEnd}>
               {dataLoadingState === "loaded" && (
@@ -392,6 +378,10 @@ export const Builder = ({
 
             {isDesignMode && <AiCommandBar />}
           </Main>
+
+          <SidePanel gridArea="sidebar">
+            <SidebarLeft publish={publish} />
+          </SidePanel>
           <SidePanel
             gridArea="inspector"
             isPreviewMode={isPreviewMode}
@@ -411,6 +401,27 @@ export const Builder = ({
           >
             <Inspector navigatorLayout={navigatorLayout} />
           </SidePanel>
+          <Main css={{ pointerEvents: "none" }}>
+            <CanvasToolsContainer />
+          </Main>
+          <Topbar
+            project={project}
+            hasProPlan={userPlanFeatures.hasProPlan}
+            css={{ gridArea: "header" }}
+            loading={
+              <LoadingBackground
+                // Looks nicer when topbar is already visible earlier, so user has more sense of progress.
+                show={
+                  loadingState.readyStates.get("dataLoadingState")
+                    ? false
+                    : true
+                }
+              />
+            }
+          />
+          <Main css={{ pointerEvents: "none" }}>
+            <TextToolbar />
+          </Main>
           {isPreviewMode === false && <Footer />}
           <CloneProjectDialog
             isOpen={isCloneDialogOpen}
