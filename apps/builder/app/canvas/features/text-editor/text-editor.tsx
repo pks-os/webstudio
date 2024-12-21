@@ -37,6 +37,9 @@ import {
   KEY_DOWN_COMMAND,
   COMMAND_PRIORITY_NORMAL,
   type NodeKey,
+  $getNodeByKey,
+  SELECTION_CHANGE_COMMAND,
+  $selectAll,
 } from "lexical";
 import { LinkNode } from "@lexical/link";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
@@ -54,19 +57,28 @@ import {
   idAttribute,
   selectorIdAttribute,
 } from "@webstudio-is/react-sdk";
-import type { InstanceSelector } from "~/shared/tree-utils";
+import { isDescendantOrSelf, type InstanceSelector } from "~/shared/tree-utils";
 import { ToolbarConnectorPlugin } from "./toolbar-connector";
 import { type Refs, $convertToLexical, $convertToUpdates } from "./interop";
 import { colord } from "colord";
 import { useEffectEvent } from "~/shared/hook-utils/effect-event";
-import { findAllEditableInstanceSelector } from "~/shared/instance-utils";
+import {
+  deleteInstanceMutable,
+  findAllEditableInstanceSelector,
+  updateWebstudioData,
+} from "~/shared/instance-utils";
 import {
   $blockChildOutline,
   $hoveredInstanceOutline,
   $hoveredInstanceSelector,
+  $instances,
   $registeredComponentMetas,
   $selectedInstanceSelector,
   $textEditingInstanceSelector,
+  $textEditorContextMenu,
+  execTextEditorContextMenuCommand,
+  findBlockChildSelector,
+  findTemplates,
 } from "~/shared/nano-states";
 import {
   getElementByInstanceSelector,
@@ -80,6 +92,7 @@ import {
   selectInstance,
 } from "~/shared/awareness";
 import { shallowEqual } from "shallow-equal";
+import { insertTemplateAt } from "~/builder/features/workspace/canvas-tools/outline/block-utils";
 
 const BindInstanceToNodePlugin = ({
   refs,
@@ -170,7 +183,10 @@ const OnChangeOnBlurPlugin = ({
 
   useEffect(() => {
     const handleBlur = () => {
-      handleChange(editor.getEditorState());
+      // force read to get the latest state
+      editor.read(() => {
+        handleChange(editor.getEditorState());
+      });
     };
 
     // https://github.com/facebook/lexical/blob/867d449b2a6497ff9b1fbdbd70724c74a1044d8b/packages/lexical-react/src/LexicalNodeEventPlugin.ts#L59C12-L67C8
@@ -199,7 +215,7 @@ const LinkSelectionPlugin = ({
   registerNewLink: (key: NodeKey, instanceId: string) => void;
 }) => {
   const [editor] = useLexicalComposerContext();
-  const [preservedSelection] = useState($selectedInstanceSelector.get());
+  const [preservedSelection] = useState(rootInstanceSelector);
 
   useEffect(() => {
     if (!editor.isEditable()) {
@@ -209,6 +225,18 @@ const LinkSelectionPlugin = ({
     const removeUpdateListener = editor.registerUpdateListener(
       ({ editorState }) => {
         editorState.read(() => {
+          const selectedInstanceSelector = $selectedInstanceSelector.get();
+
+          if (selectedInstanceSelector === undefined) {
+            return;
+          }
+
+          if (
+            !isDescendantOrSelf(selectedInstanceSelector, preservedSelection)
+          ) {
+            return;
+          }
+
           const selection = $getSelection();
           if (!$isRangeSelection(selection)) {
             return false;
@@ -688,6 +716,10 @@ const InitCursorPlugin = () => {
 
         return;
       }
+      if (reason === "new") {
+        $selectAll();
+        return;
+      }
 
       reason satisfies never;
     });
@@ -904,6 +936,367 @@ const SwitchBlockPlugin = ({ onNext }: SwitchBlockPluginProps) => {
   return null;
 };
 
+type ContextMenuParams = {
+  cursorRect: DOMRect;
+};
+
+type RichTextContentPluginProps = {
+  rootInstanceSelector: InstanceSelector;
+  onOpen: (
+    editorState: EditorState,
+    params: undefined | ContextMenuParams
+  ) => void;
+  onNext: (editorState: EditorState, params: HandleNextParams) => void;
+};
+
+const RichTextContentPlugin = (props: RichTextContentPluginProps) => {
+  const [templates] = useState(() =>
+    findTemplates(props.rootInstanceSelector, $instances.get())
+  );
+
+  if (templates === undefined) {
+    return;
+  }
+
+  if (templates.length === 0) {
+    return;
+  }
+
+  return <RichTextContentPluginInternal {...props} templates={templates} />;
+};
+
+const RichTextContentPluginInternal = ({
+  rootInstanceSelector,
+  onOpen,
+  templates,
+  onNext,
+}: RichTextContentPluginProps & {
+  templates: [instance: Instance, instanceSelector: InstanceSelector][];
+}) => {
+  const [editor] = useLexicalComposerContext();
+  const [preservedSelection] = useState(rootInstanceSelector);
+
+  const handleOpen = useEffectEvent(onOpen);
+
+  useEffect(() => {
+    if (!editor.isEditable()) {
+      return;
+    }
+
+    let menuState: "closed" | "opening" | "opened" = "closed";
+
+    let slashNodeKey: NodeKey | undefined = undefined;
+
+    const closeMenu = () => {
+      if (menuState === "closed") {
+        return;
+      }
+
+      menuState = "closed";
+
+      handleOpen(editor.getEditorState(), undefined);
+
+      if (slashNodeKey === undefined) {
+        return;
+      }
+
+      const node = $getNodeByKey(slashNodeKey);
+
+      if ($isTextNode(node)) {
+        node.setStyle("");
+      }
+
+      const selectedInstanceSelector = $selectedInstanceSelector.get();
+
+      const isSelectionInSameComponent = selectedInstanceSelector
+        ? isDescendantOrSelf(selectedInstanceSelector, preservedSelection)
+        : false;
+
+      if (!isSelectionInSameComponent) {
+        node?.remove();
+
+        const rootNodeContent = $getRoot().getTextContent().trim();
+        // Delete current
+        if (rootNodeContent.length === 0) {
+          const blockChildSelector =
+            findBlockChildSelector(rootInstanceSelector);
+
+          if (blockChildSelector) {
+            updateWebstudioData((data) => {
+              deleteInstanceMutable(data, rootInstanceSelector);
+            });
+          }
+        }
+      }
+
+      // if selection changed, remove the slash node
+
+      const selection = $getSelection();
+
+      if (!$isRangeSelection(selection)) {
+        return;
+      }
+
+      selection.setStyle("");
+    };
+
+    const unsubscibeSelectionChange = editor.registerCommand(
+      SELECTION_CHANGE_COMMAND,
+      () => {
+        if (menuState !== "opened") {
+          return false;
+        }
+
+        const selection = $getSelection();
+
+        if (!$isRangeSelection(selection)) {
+          closeMenu();
+          return false;
+        }
+
+        if (selection.anchor.key !== slashNodeKey) {
+          closeMenu();
+          return false;
+        }
+
+        return false;
+      },
+      COMMAND_PRIORITY_LOW
+    );
+
+    const unsubscibeKeyDown = editor.registerCommand(
+      KEY_DOWN_COMMAND,
+      (event) => {
+        const selection = $getSelection();
+
+        if (!$isRangeSelection(selection)) {
+          return false;
+        }
+
+        if (event.key === "Backspace" || event.key === "Delete") {
+          const rootNodeContent = $getRoot().getTextContent().trim();
+          // Delete current
+          if (rootNodeContent.length === 0) {
+            const blockChildSelector =
+              findBlockChildSelector(rootInstanceSelector);
+
+            if (blockChildSelector) {
+              onNext(editor.getEditorState(), { reason: "left" });
+
+              updateWebstudioData((data) => {
+                deleteInstanceMutable(data, rootInstanceSelector);
+              });
+
+              event.preventDefault();
+              return true;
+            }
+          }
+        }
+
+        if (menuState === "closed") {
+          if (event.key === "Enter" && !event.shiftKey) {
+            // Check if it pressed on the last line, last symbol
+
+            const allowedComponents = ["Paragraph", "Text", "Heading"];
+
+            for (const component of allowedComponents) {
+              const templateSelector = templates.find(
+                ([instance]) => instance.component === component
+              )?.[1];
+
+              if (templateSelector === undefined) {
+                continue;
+              }
+
+              /*
+              @todo Split logic idea
+              // clone root node then
+
+              // getPreviousSibling
+              const removeNextSiblings = (node: LexicalNode) => {
+                let current: LexicalNode | null = node;
+                while (current) {
+                  const next = current.getNextSibling();
+                  if (next) {
+                    next.remove();
+                    continue;
+                  }
+                  // Move up to parent and continue removing siblings
+
+                  current = current.getParent();
+
+                  if ($isRootNode(current)) {
+                    break;
+                  }
+                }
+              };
+
+              const anchorNode = selection.anchor.getNode();
+              const anchorOffset = selection.anchor.offset;
+
+              if (!$isTextNode(anchorNode)) {
+                continue;
+              }
+              anchorNode.splitText(anchorOffset);
+              removeNextSiblings(anchorNode);
+
+              */
+
+              insertTemplateAt(templateSelector, rootInstanceSelector, false);
+
+              event.preventDefault();
+              return true;
+            }
+          }
+        }
+
+        if (menuState === "opened") {
+          if (event.key === "Escape") {
+            closeMenu();
+            event.preventDefault();
+            return true;
+          }
+
+          if (event.key === " ") {
+            closeMenu();
+          }
+
+          if (event.key === "/") {
+            closeMenu();
+          }
+
+          if (event.key === "Enter") {
+            execTextEditorContextMenuCommand({
+              type: "enter",
+            });
+
+            event.preventDefault();
+            return true;
+          }
+
+          if (event.key === "ArrowUp") {
+            execTextEditorContextMenuCommand({
+              type: "selectPrevious",
+            });
+
+            event.preventDefault();
+            return true;
+          }
+
+          if (event.key === "ArrowDown") {
+            execTextEditorContextMenuCommand({
+              type: "selectNext",
+            });
+
+            event.preventDefault();
+            return true;
+          }
+        }
+
+        if (menuState === "closed") {
+          if (event.key !== "/") {
+            return false;
+          }
+
+          const slashNode = $createTextNode("/");
+          slashNodeKey = slashNode.getKey();
+          menuState = "opening";
+
+          slashNode.setStyle("background-color: rgba(127, 127, 127, 0.2);");
+          selection.setStyle("background-color: rgba(127, 127, 127, 0.2);");
+          selection.insertNodes([slashNode]);
+
+          event.preventDefault();
+          return true;
+        }
+
+        return false;
+      },
+      COMMAND_PRIORITY_EDITOR
+    );
+
+    const closeMenuWithUpdate = () => {
+      editor.update(() => {
+        closeMenu();
+      });
+    };
+
+    const unsubscribeUpdateListener = editor.registerUpdateListener(
+      ({ editorState }) => {
+        if (menuState === "opened") {
+          editorState.read(() => {
+            if (slashNodeKey === undefined) {
+              closeMenu();
+              return;
+            }
+            const node = $getNodeByKey(slashNodeKey);
+
+            if (node === null) {
+              closeMenuWithUpdate();
+              return;
+            }
+            const content = node.getTextContent();
+
+            const filter = content.slice(1);
+
+            execTextEditorContextMenuCommand({
+              type: "filter",
+              value: filter,
+            });
+          });
+        }
+
+        if (menuState === "opening") {
+          editorState.read(() => {
+            if (slashNodeKey === undefined) {
+              closeMenu();
+              return;
+            }
+
+            const slashNode = editor.getElementByKey(slashNodeKey);
+
+            if (slashNode === null) {
+              closeMenu();
+              return;
+            }
+
+            const rect = slashNode.getBoundingClientRect();
+
+            menuState = "opened";
+
+            handleOpen(editor.getEditorState(), {
+              cursorRect: rect,
+            });
+          });
+        }
+      }
+    );
+
+    const unsubscribeBlurListener = editor.registerRootListener(
+      (rootElement, prevRootElement) => {
+        rootElement?.addEventListener("blur", closeMenuWithUpdate);
+        prevRootElement?.removeEventListener("blur", closeMenuWithUpdate);
+      }
+    );
+
+    return () => {
+      unsubscibeKeyDown();
+      unsubscribeUpdateListener();
+      unsubscibeSelectionChange();
+      unsubscribeBlurListener();
+    };
+  }, [
+    editor,
+    handleOpen,
+    onNext,
+    preservedSelection,
+    rootInstanceSelector,
+    templates,
+  ]);
+
+  return null;
+};
+
 const onError = (error: Error) => {
   throw error;
 };
@@ -989,13 +1382,14 @@ const AnyKeyDownPlugin = ({
 };
 
 export const TextEditor = ({
-  rootInstanceSelector,
+  rootInstanceSelector: rootInstanceSelectorUnstable,
   instances,
   contentEditable,
   editable,
   onChange,
   onSelectInstance,
 }: TextEditorProps) => {
+  const [rootInstanceSelector] = useState(() => rootInstanceSelectorUnstable);
   // class names must be started with letter so we add a prefix
   const [paragraphClassName] = useState(() => `a${nanoid()}`);
   const [italicClassName] = useState(() => `a${nanoid()}`);
@@ -1021,6 +1415,15 @@ export const TextEditor = ({
 
       setDataCollapsed(rootInstanceSelector[0], false);
     });
+
+    const textEditingSelector = $textEditingInstanceSelector.get()?.selector;
+    if (textEditingSelector === undefined) {
+      return;
+    }
+
+    if (shallowEqual(textEditingSelector, rootInstanceSelector)) {
+      $textEditingInstanceSelector.set(undefined);
+    }
   });
 
   useLayoutEffect(() => {
@@ -1070,7 +1473,7 @@ export const TextEditor = ({
     onError,
   };
 
-  const handleNext = useCallback(
+  const handleNext = useEffectEvent(
     (state: EditorState, args: HandleNextParams) => {
       const rootInstanceId = $selectedPage.get()?.rootInstanceId;
 
@@ -1080,8 +1483,7 @@ export const TextEditor = ({
 
       const editableInstanceSelectors: InstanceSelector[] = [];
       findAllEditableInstanceSelector(
-        rootInstanceId,
-        [],
+        [rootInstanceId],
         instances,
         $registeredComponentMetas.get(),
         editableInstanceSelectors
@@ -1152,8 +1554,7 @@ export const TextEditor = ({
 
         break;
       }
-    },
-    [handleChange, instances, rootInstanceSelector]
+    }
   );
 
   const handleAnyKeydown = useCallback((event: KeyboardEvent) => {
@@ -1178,6 +1579,13 @@ export const TextEditor = ({
       });
     },
     [newLinkKeyToInstanceId]
+  );
+
+  const handleContextMenuOpen = useCallback(
+    (_editorState: EditorState, params: undefined | ContextMenuParams) => {
+      $textEditorContextMenu.set(params);
+    },
+    []
   );
 
   return (
@@ -1207,6 +1615,11 @@ export const TextEditor = ({
       <HistoryPlugin />
 
       <SwitchBlockPlugin onNext={handleNext} />
+      <RichTextContentPlugin
+        onOpen={handleContextMenuOpen}
+        rootInstanceSelector={rootInstanceSelector}
+        onNext={handleNext}
+      />
       <OnChangeOnBlurPlugin onChange={handleChange} />
       <InitCursorPlugin />
       <LinkSelectionPlugin
