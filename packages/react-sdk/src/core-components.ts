@@ -150,8 +150,7 @@ const blockTemplatePropsMeta: WsComponentPropsMeta = {
 };
 
 const blockMeta: WsComponentMeta = {
-  category: "data",
-  order: 2,
+  category: "typography",
   type: "container",
   label: "Content Block",
   icon: EditIcon,
@@ -268,17 +267,7 @@ const blockMeta: WsComponentMeta = {
                 {
                   component: "ListItem",
                   type: "instance",
-                  children: [{ type: "text", value: "list item you can edit" }],
-                },
-                {
-                  component: "ListItem",
-                  type: "instance",
-                  children: [{ type: "text", value: "list item you can edit" }],
-                },
-                {
-                  component: "ListItem",
-                  type: "instance",
-                  children: [{ type: "text", value: "list item you can edit" }],
+                  children: [],
                 },
               ],
             },
@@ -297,17 +286,7 @@ const blockMeta: WsComponentMeta = {
                 {
                   component: "ListItem",
                   type: "instance",
-                  children: [{ type: "text", value: "list item you can edit" }],
-                },
-                {
-                  component: "ListItem",
-                  type: "instance",
-                  children: [{ type: "text", value: "list item you can edit" }],
-                },
-                {
-                  component: "ListItem",
-                  type: "instance",
-                  children: [{ type: "text", value: "list item you can edit" }],
+                  children: [],
                 },
               ],
             },
