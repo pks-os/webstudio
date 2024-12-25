@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@nanostores/react";
-import { CrossIcon } from "@webstudio-is/icons";
+import { XIcon } from "@webstudio-is/icons";
 import {
   type WsComponentMeta,
   blockComponent,
@@ -38,7 +38,7 @@ import {
   findClosestInsertable,
   getComponentTemplateData,
   getInstanceLabel,
-  insertTemplateData,
+  insertWebstudioFragmentAt,
 } from "~/shared/instance-utils";
 import { isFeatureEnabled } from "@webstudio-is/feature-flags";
 import { matchSorter } from "match-sorter";
@@ -191,7 +191,7 @@ export const ComponentsPanel = ({
     if (fragment) {
       const insertable = findClosestInsertable(fragment);
       if (insertable) {
-        insertTemplateData(fragment, insertable);
+        insertWebstudioFragmentAt(fragment, insertable);
       }
     }
   };
@@ -260,7 +260,7 @@ export const ComponentsPanel = ({
           <Tooltip content="Close panel" side="bottom">
             <Button
               color="ghost"
-              prefix={<CrossIcon />}
+              prefix={<XIcon />}
               aria-label="Close panel"
               onClick={onClose}
             />
