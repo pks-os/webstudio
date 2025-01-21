@@ -21,6 +21,8 @@
     "@webstudio-is/sdk-components-react": "workspace:*",
     "@webstudio-is/sdk-components-react-radix": "workspace:*",
     "@webstudio-is/sdk-components-react-router": "workspace:*",
+    "h3": "^1.13.1",
+    "ipx": "^3.0.1",
     "isbot": "^5.1.19",
     "react": "18.3.0-canary-14898b6a9-20240318",
     "react-dom": "18.3.0-canary-14898b6a9-20240318",
@@ -33,7 +35,7 @@
   "devDependencies": {
     "@types/react": "^18.2.70",
     "@types/react-dom": "^18.2.25",
-    "typescript": "5.7.2"
+    "typescript": "5.7.3"
   },
   "engines": {
     "node": ">=20.0.0"
