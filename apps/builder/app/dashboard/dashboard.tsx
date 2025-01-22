@@ -11,14 +11,7 @@ import {
   theme,
 } from "@webstudio-is/design-system";
 import type { DashboardProject } from "@webstudio-is/dashboard";
-import {
-  BodyIcon,
-  ContentIcon,
-  DiscordIcon,
-  ExtensionIcon,
-  LifeBuoyIcon,
-  YoutubeIcon,
-} from "@webstudio-is/icons";
+import { BodyIcon, ExtensionIcon } from "@webstudio-is/icons";
 import type { User } from "~/shared/db/user.server";
 import type { UserPlanFeatures } from "~/shared/db/user-plan-features.server";
 import { NavLink, useLocation, useRevalidator } from "@remix-run/react";
@@ -29,6 +22,7 @@ import { ProfileMenu } from "./profile-menu";
 import { Projects } from "./projects/projects";
 import { Templates } from "./templates/templates";
 import { Header } from "./shared/layout";
+import { help } from "~/shared/help";
 
 const globalStyles = globalCss({
   body: {
@@ -128,6 +122,7 @@ type DashboardProps = {
   user: User;
   projects?: Array<DashboardProject>;
   templates?: Array<DashboardProject>;
+  welcome: boolean;
   userPlanFeatures: UserPlanFeatures;
   publisherHost: string;
   projectToClone?: {
@@ -141,6 +136,7 @@ export const Dashboard = ({
   user,
   projects,
   templates,
+  welcome,
   userPlanFeatures,
   publisherHost,
   projectToClone,
@@ -167,48 +163,38 @@ export const Dashboard = ({
           <nav>
             <CollapsibleSection label="Workspace" fullWidth>
               <NavigationItems
-                items={[
-                  {
-                    to: dashboardPath(),
-                    prefix: <BodyIcon />,
-                    children: "Projects",
-                  },
-                  {
-                    to: templatesPath(),
-                    prefix: <ExtensionIcon />,
-                    children: "Starter templates",
-                  },
-                ]}
+                items={
+                  welcome
+                    ? [
+                        {
+                          to: templatesPath(),
+                          prefix: <ExtensionIcon />,
+                          children: "Welcome",
+                        },
+                      ]
+                    : [
+                        {
+                          to: dashboardPath(),
+                          prefix: <BodyIcon />,
+                          children: "Projects",
+                        },
+                        {
+                          to: templatesPath(),
+                          prefix: <ExtensionIcon />,
+                          children: "Starter templates",
+                        },
+                      ]
+                }
               />
             </CollapsibleSection>
             <CollapsibleSection label="Help & support" fullWidth>
               <NavigationItems
-                items={[
-                  {
-                    to: "https://wstd.us/101",
-                    target: "_blank",
-                    prefix: <YoutubeIcon />,
-                    children: "Video tutorials",
-                  },
-                  {
-                    to: "https://help.webstudio.is/",
-                    target: "_blank",
-                    prefix: <LifeBuoyIcon />,
-                    children: "Support hub",
-                  },
-                  {
-                    to: "https://docs.webstudio.is",
-                    target: "_blank",
-                    prefix: <ContentIcon />,
-                    children: "Docs",
-                  },
-                  {
-                    to: "https://wstd.us/community",
-                    target: "_blank",
-                    prefix: <DiscordIcon />,
-                    children: "Community",
-                  },
-                ]}
+                items={help.map((item) => ({
+                  to: item.url,
+                  target: "_blank",
+                  prefix: item.icon,
+                  children: item.label,
+                }))}
               />
             </CollapsibleSection>
           </nav>
@@ -220,7 +206,7 @@ export const Dashboard = ({
             publisherHost={publisherHost}
           />
         )}
-        {templates && <Templates templates={templates} />}
+        {templates && <Templates templates={templates} welcome={welcome} />}
       </Flex>
       <CloneProject projectToClone={projectToClone} />
       <Toaster />
